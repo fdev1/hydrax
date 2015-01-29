@@ -1,0 +1,7 @@
+*.o
+/hydrax
+/hydrax.map
+/hydrax.syms
+/initrd.img
+
+

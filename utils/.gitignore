@@ -1,0 +1,6 @@
+*.o
+init
+echo
+threadtest
+pipetest
+

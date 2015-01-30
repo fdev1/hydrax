@@ -16,6 +16,9 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
+#define CONFIG_ARCH_X86
+#define CONFIG_SUBARCH_I386
+
 #define ARCH_STACK_START				(0xDFFFFFFC)
 #define ARCH_STACK_INITIAL_SIZE		(0x8000)
 
@@ -113,6 +116,7 @@ void reboot(void);
 
 #if defined(KERNEL_CODE)
 #	ifndef __ASSERT_H__
+#		define __ASSERT_H__
 #		if defined(NDEBUG)
 #			define assert(expr)			(void) 0
 #		else
@@ -123,6 +127,7 @@ void reboot(void);
 #	endif
 #else
 #	ifndef __ASSERT_H__
+#		define __ASSERT_H__
 #		include <unistd.h>
 #		if defined(NDEBUG)
 #			define assert(expr)			(void) 0

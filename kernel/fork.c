@@ -245,14 +245,6 @@ int vfork(void)
  * This works exactly like fork except that the new
  * thread shares the entire userspace with the parent.
  * 
- * WARNING: Upon returning from this call the cloned
- * thread shares the entire userspace of the parent thread
- * INCLUDING THE STACK. It is the userspace responsibility
- * to switch the child thread's stack. This requires
- * making sure that the parent thread does not modify
- * the stack until the child thread has switched stack.
- * The child thread usually returns before the parent
- * thread but this behaviour cannot be relied on.
  */
 int clone(void *stack)
 {

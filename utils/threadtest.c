@@ -8,9 +8,6 @@
 
 
 mutex_t mutex = MUTEX_INITIALIZER;
-unsigned int stack[1024];
-void syscall_test();
-int x;
 
 void *thread_entry(void *argument)
 {
@@ -33,7 +30,7 @@ int main()
 	int tid;
 	pthread_t thread;
 	
-	tid = pthread_create(&thread, &stack[1023], NULL, &thread_entry, (void*)&thread);
+	tid = pthread_create(&thread, NULL, &thread_entry, (void*)&thread);
 	if (tid < 0)
 	{
 		printf("pthread_create failed!\n");

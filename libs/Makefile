@@ -12,7 +12,7 @@
 # permission from the author.
 # 
 
-SOURCES=unistd.o string.o stdio.o start.o
+SOURCES=unistd.o string.o stdio.o start.o bget/bget.o malloc.o
 PTHREAD=pthread.o
 
 CFLAGS=-g -m32 -static -nostdlib -nostdinc -fno-builtin -I. -I../kernel/include -fno-stack-protector
@@ -21,7 +21,8 @@ ARFLAGS=mcs
 all: libc pthread
 
 clean: 
-	rm -f *.o 
+	rm -f *.o
+	rm -f bget/*.o
 	rm -f libc.a
 	rm -f libpthread.a
 
@@ -31,7 +32,7 @@ libc: $(SOURCES)
 	
 pthread: $(PTHREAD)
 	@echo -e "  AR\t\tlibpthread.a"
-	@ar $(ARFLAGS) libpthread.a $(PTHREAD)
+	@ar $(ARFLAGS) libpthread.a $(PTHREAD) libc.a
 
 .c.o:
 	@echo -e "  CC\t\t"$<

@@ -82,7 +82,9 @@ kernel: $(SOURCES)
 		../utils/init /sbin/init \
 		../utils/echo /bin/echo \
 		../utils/pipetest /bin/pipetest \
-		../utils/threadtest /bin/threadtest > /dev/null
+		../utils/threadtest /bin/threadtest \
+		../files/inittab /etc/inittab \
+		../files/shellrc /etc/shellrc > /dev/null
 		
 	@echo -e "  MKIMAGE\thydrax.img"
 	@cp hydrax ../image/hydrax

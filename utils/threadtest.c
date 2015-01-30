@@ -4,13 +4,15 @@
 #include <mutex.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
+
 
 mutex_t mutex = MUTEX_INITIALIZER;
 unsigned int stack[1024];
 void syscall_test();
 int x;
 
-void thread_entry(void *argument)
+void *thread_entry(void *argument)
 {
 	int i = 3;
 	printf("Argument at 0x%x\n", (uint32_t) &argument);
@@ -22,30 +24,30 @@ void thread_entry(void *argument)
 		yield();
 	}
 	exit(0);
+	return (void*) NULL;
 }
 
 int main()
 {
-	int i = 3;
+	int i;
+	int tid;
+	pthread_t thread;
 	
-	if (clone(&stack[1023]) != 0)
+	tid = pthread_create(&thread, &stack[1023], NULL, &thread_entry, (void*)&thread);
+	if (tid < 0)
 	{
-		while (i--)
-		{
-			mutex_wait(&mutex);
-			printf("cloned pid=%i tid=%i.\n", getpid(), gettid());
-			mutex_release(&mutex);
-			yield();
-		}
-		exit(0);
+		printf("pthread_create failed!\n");
+		exit(-1);
 	}
-	else
+	
+	i = 3;
+	while (i--)
 	{
-		thread_entry(&i);
-		//asm __volatile__(
-		//	"mov %1, %%esp;"
-		//	"call *%0;" : : "r" (&thread_entry), "i" (&stack[255]));
-		exit(0);
-	}	
+		mutex_wait(&mutex);
+		printf("cloned pid=%i tid=%i.\n", getpid(), gettid());
+		mutex_release(&mutex);
+		yield();
+	}
+
 	return 0;
 }

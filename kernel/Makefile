@@ -98,7 +98,7 @@ kernel: $(SOURCES)
 	
 	
 vbox: kernel
-	VirtualBox --dbg --startvm fernanos 2> /dev/null &
+	VirtualBox --dbg --startvm Hydrax 2> /dev/null &
 	
 run: kernel
 	@echo -e "  QEMU\t\thydrax.img"

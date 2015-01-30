@@ -69,9 +69,11 @@
 	asm __volatile__(						\
 		"cli;"						\
 		"mov %%cr0, %%eax;"				\
-		"and $0x7fffffff, %%eax;"		\
+		"and $0x7ffeffff, %%eax;"		\
 		"mov %%eax, %%cr0;"				\
 		"mov $0x400, %%eax;"			\
+		"nop;"						\
+		"nop;"						\
 		"1:"							\
 		"mov (%1), %%ebx;"				\
 		"mov %%ebx, (%0);"				\
@@ -80,7 +82,7 @@
 		"dec %%eax;"					\
 		"jnz 1b;"						\
 		"mov %%cr0, %%eax;"				\
-		"or $0x80000000, %%eax;"			\
+		"or $0x80010000, %%eax;"			\
 		"mov %%eax, %%cr0;"				\
 		"sti;" : : "r" (dest), "r" (src) : "cc", "eax", "ebx")
 		
@@ -772,6 +774,7 @@ static inline page_table_t *mmu_clone_table(
 			copy_physical_page(
 				(*table)->pages[i].frame * MMU_PAGE_SIZE, 
 				src->pages[i].frame * MMU_PAGE_SIZE);
+
 		}
 	}
 	return *table;

@@ -97,7 +97,7 @@ int kill(pid_t pid, int signum);
 /*
  * clone the current task
  */
-int clone(void);
+int clone(void *stack);
 
 /*
  * exit the current task

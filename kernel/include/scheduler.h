@@ -44,6 +44,7 @@ struct __descriptor_table;
 typedef struct __task
 {
 	task_state_t machine_state;	/* DO NOT MOVE THIS */
+	registers_t *registers;		/* points to the registers pushed to the stack before a syscall */
 	pid_t id;
 	pid_t pid;
 	uid_t uid;

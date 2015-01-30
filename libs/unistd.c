@@ -183,7 +183,7 @@ int vfork(void)
 	syscall0(SYSCALL_VFORK);
 }
 
-int clone(void)
+int clone(void *stack)
 {
 	syscall0(SYSCALL_CLONE);
 }

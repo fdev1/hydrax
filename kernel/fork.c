@@ -232,7 +232,7 @@ int fork(void)
 	*ptask = new_task;
 	mutex_release(&current_task->lock);
 	
-	return kfork(new_task, directory, phys, memmap, kernel_stack);	
+	return kfork(new_task, directory, phys, memmap, kernel_stack);
 }
 
 int vfork(void)
@@ -254,13 +254,14 @@ int vfork(void)
  * The child thread usually returns before the parent
  * thread but this behaviour cannot be relied on.
  */
-int clone(void)
+int clone(void *stack)
 {
+	int ret;
 	task_t *new_task, *tmp_task;
 	intptr_t kernel_stack;
 	vfs_node_t *procfs_node;
 	pid_t new_pid, new_tid;
-	uint32_t old_stack;
+	uint32_t *old_stack, *new_stack, tmp;
 	
 	/*
 	 * Get new TID, use parent's PID.
@@ -349,13 +350,22 @@ int clone(void)
 		tmp_task = tmp_task->next_thread;
 	tmp_task->next_thread = new_task;
 	mutex_release(&current_task->main_thread->lock);
+
+	/*
+	 * In order to get a new usermode stack for the
+	 * cloned thread we change the usermode stack pointer
+	 * before forking and after the fork we restore it
+	 * on the original thread.
+	 */
+	arch_copy_user_stack((uint32_t) stack);
+	tmp = arch_get_user_stack();
+	arch_set_user_stack(arch_adj_user_stack_pointer((uint32_t) stack));
 	
-	#if 0
-	asm __volatile__("mov %%esp, %0" : "=r" (old_stack));
-	memcpy(new_stack, old_stack, ARCH_STACK_START - old_stack);
-	#endif
-	
-	return kfork(new_task, current_directory, 
+	ret = kfork(new_task, current_directory, 
 		arch_get_directory_physical(current_task->machine_state), 
-		arch_get_memmap(current_task->machine_state), kernel_stack);	
+		arch_get_memmap(current_task->machine_state), kernel_stack);
+	
+	if (ret != 0)
+		arch_set_user_stack(tmp);
+	return ret;
 }

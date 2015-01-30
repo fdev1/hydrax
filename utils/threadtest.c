@@ -28,7 +28,7 @@ int main()
 {
 	int i = 3;
 	
-	if (clone() != 0)
+	if (clone(&stack[1023]) != 0)
 	{
 		while (i--)
 		{
@@ -41,9 +41,10 @@ int main()
 	}
 	else
 	{
-		asm __volatile__(
-			"mov %1, %%esp;"
-			"call *%0;" : : "r" (&thread_entry), "i" (&stack[255]));
+		thread_entry(&i);
+		//asm __volatile__(
+		//	"mov %1, %%esp;"
+		//	"call *%0;" : : "r" (&thread_entry), "i" (&stack[255]));
 		exit(0);
 	}	
 	return 0;

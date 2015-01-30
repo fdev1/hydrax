@@ -58,6 +58,34 @@ task_state_t;
 #define arch_get_memmap(task)					(task.memmap)
 #define arch_set_memmap(task, value)			task.memmap = value
 
+#define arch_get_user_stack()					(current_task->registers->useresp)
+#define arch_set_user_stack(stack)				current_task->registers->useresp = (stack)
+
+/*
+ * Given an address for a usermode stack this macro returns what
+ * the stack pointer would be after the stack is relocated to this
+ * buffer. Currently it assumes that the stack grown downwards
+ * so it's not very portable. TODO: We need to FIX that.
+ */
+#define arch_adj_user_stack_pointer(stack)		(stack - (ARCH_STACK_START - current_task->registers->useresp))
+
+/*
+ * Copy the user-mode stack. This is a simple copy of the
+ * stack used by clone() to fork new threads. Pointers to
+ * stack values will still point to the old stack.
+ */
+#define arch_copy_user_stack(stack)		\
+	do											\
+	{											\
+		uint32_t *old_stack, *new_stack;				\
+		new_stack = (uint32_t*) (stack - (ARCH_STACK_START - current_task->registers->useresp)); \
+		old_stack = (uint32_t*) current_task->registers->useresp;	\
+		while ((uint32_t) old_stack <= ARCH_STACK_START)	\
+			*new_stack++ = *old_stack++;				\
+	}											\
+	while (0)
+
+
 /*
  * returns TRUE if the current task has just been
  * resumed by calling arch_scheduler_load_task_state()

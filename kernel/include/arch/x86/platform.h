@@ -49,6 +49,19 @@ typedef int bool;
 typedef unsigned int intptr_t;
 typedef unsigned int pintptr_t;
 
+/*
+ * Stores the state of the execution environment
+ * right before an interrupt.
+ */
+typedef struct
+{
+	uint32_t ds;
+	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
+	uint32_t int_no, err_code;
+	uint32_t eip, cs, eflags, useresp, ss;
+} 
+registers_t;
+
 #if defined(KERNEL_CODE)
 /*
  * port IO

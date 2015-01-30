@@ -75,7 +75,7 @@ static syscall_t syscalls[] =
 	{ &ioctl, 4 },		/* long arg = 2 */
 	{ &dup, 1 },
 	{ &yield, 0 },
-	{ &clone, 0 },
+	{ &clone, 1 },
 	{ &gettid, 0 },
 };
 
@@ -124,17 +124,22 @@ int syscall(unsigned int num, ...)
 /*
  * syscall handler
  */
-/*static*/ void syscall_handler(registers_t *regs)
+static void syscall_handler(registers_t *regs)
 {
 	int ret;
-	void *func;
 
-	if (regs->eax >= SYSCALL_COUNT)
+	if (unlikely(regs->eax >= SYSCALL_COUNT))
+	{
+		regs->eax = ENOSYS;
 		return;
+	}
+	
+	/*
+	 * This allows easy access to the user-mode stack.
+	 */
+	current_task->registers = regs;
 
-	func = syscalls[regs->eax].entry;
-
-	asm volatile(
+	asm __volatile__(
 		"push %1;"
 		"push %2;"
 		"push %3;"
@@ -144,7 +149,7 @@ int syscall(unsigned int num, ...)
 		"add $0x14, %%esp"
 		: "=a" (ret)
 		: "r" (regs->edi), "r" (regs->esi), "r" (regs->edx),
-			"r" (regs->ecx), "r" (regs->ebx), "r" (func));
+			"r" (regs->ecx), "r" (regs->ebx), "r" (syscalls[regs->eax].entry));
 	regs->eax = ret;
 }
 

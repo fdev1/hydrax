@@ -10,6 +10,7 @@
  * This code is distributed for educational purposes
  * only. It may not be distributed without written 
  * permission from the author.
+ * 
  */
 
 #if defined(KERNEL_CODE)
@@ -66,7 +67,7 @@
  * Copy a physical page.
  */
 #define copy_physical_page(dest, src)		\
-	asm __volatile__(						\
+	asm __volatile__(					\
 		"cli;"						\
 		"mov %%cr0, %%eax;"				\
 		"and $0x7ffeffff, %%eax;"		\

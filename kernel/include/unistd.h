@@ -181,6 +181,12 @@ int ioctl(int fd, unsigned long request, ...);
 int dup(int oldfd);
 
 /*
+ * Duplicate a file descriptor and assign newfd
+ * to the it. If newfd is already open it is closed.
+ */
+int dup2(int oldfd, int newfd);
+
+/*
  * Yield the CPU
  */
 void yield(void);

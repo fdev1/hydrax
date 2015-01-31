@@ -57,7 +57,7 @@ static inline file_t *get_file_descriptor(unsigned int fd)
  * Creates a file descriptor in the current task
  * descriptors table
  */
-static inline int create_file_descriptor(vfs_node_t *node, unsigned int mode)
+static inline int create_file_descriptor(vfs_node_t *node, int fd, unsigned int mode)
 {
 	desc_info_t *desc_table;
 	file_t *f;
@@ -78,7 +78,11 @@ static inline int create_file_descriptor(vfs_node_t *node, unsigned int mode)
 	mutex_wait(&current_task->descriptors_info->lock);
 	desc_table = (desc_info_t*) current_task->descriptors_info;
 	assert(desc_table != NULL);
-	f->fd = desc_table->fd_next++;
+	
+	if (unlikely(fd >= 0))
+		f->fd = fd;
+	else
+		f->fd = desc_table->fd_next++;
 
 	if (unlikely(desc_table->file_descriptors == NULL))
 	{
@@ -235,7 +239,41 @@ static size_t pipe_write(vfs_node_t* node, uint32_t offset, uint32_t len, uint8_
  */
 int dup(int oldfd)
 {
-	return ENOSYS;
+	return dup2(oldfd, -1);
+}
+
+/*
+ * Duplicate a file descriptor and assign newfd
+ * to the it. If newfd is already open it is closed.
+ */
+int dup2(int oldfd, int newfd)
+{
+	int fd;
+	file_t *old_desc, *new_desc;
+	
+	old_desc = get_file_descriptor(oldfd);
+	if (old_desc == NULL)
+		return EBADF;
+	assert(old_desc->node != NULL);
+	
+	new_desc = get_file_descriptor(newfd);
+	if (new_desc != NULL)
+		close(new_desc->fd);
+	
+	mutex_wait(&old_desc->node->lock);
+	old_desc->node->refs++;
+	fd = create_file_descriptor(old_desc->node, newfd, old_desc->mode);
+	if (fd < 0)
+	{
+		mutex_release(&old_desc->node->lock);
+		return fd;
+	}
+	
+	mutex_release(&old_desc->node->lock);
+	new_desc = get_file_descriptor(fd);
+	assert(new_desc != NULL);
+	new_desc->offset = old_desc->offset;	
+	return fd;
 }
 
 /*
@@ -276,8 +314,8 @@ int pipe(int pipefd[2])
 	node->data = pipe;
 	node->refs = 2;
 	
-	pipefd[0] = create_file_descriptor(node, FD_MODE_READ);
-	pipefd[1] = create_file_descriptor(node, FD_MODE_WRITE);
+	pipefd[0] = create_file_descriptor(node, -1, FD_MODE_READ);
+	pipefd[1] = create_file_descriptor(node, -1, FD_MODE_WRITE);
 	return 0;
 }
 
@@ -303,7 +341,7 @@ int open(const char *pathname, int flags)
 		return EACCES;
 	}
 	
-	return create_file_descriptor(node, FD_MODE_READ | FD_MODE_WRITE);
+	return create_file_descriptor(node, -1, FD_MODE_READ | FD_MODE_WRITE);
 }
 
 /*

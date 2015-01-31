@@ -78,6 +78,7 @@ static syscall_t syscalls[] =
 	{ &yield, 0 },
 	{ &clone, 1 },
 	{ &gettid, 0 },
+	{ &dup2, 2 },
 };
 
 /*
@@ -85,6 +86,7 @@ static syscall_t syscalls[] =
  * This function is meant to be called from userland only
  * and will eventually be removed from the kernel.
  */
+#if 0
 int syscall(unsigned int num, ...)
 {
 	int ret;
@@ -121,6 +123,7 @@ int syscall(unsigned int num, ...)
 	}
 	return 0;	/* clang	 shows warning without this */
 }
+#endif
 
 /*
  * syscall handler

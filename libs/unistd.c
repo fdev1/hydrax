@@ -32,10 +32,12 @@ void syscall_test(void)
 /*
  *
  */
-int open(const char *pathname, int flags)
+int __open(const char *pathname, int flags)
 {
 	syscall2(SYSCALL_OPEN, pathname, flags);
 }
+int open(const char *pathname, int flags) 
+	__attribute__((weak, alias("__open")));
 
 /*
  * Close a file handle
@@ -192,3 +194,14 @@ pid_t gettid(void)
 {
 	syscall0(SYSCALL_GETTID);
 }
+
+int dup(int oldfd)
+{
+	syscall1(SYSCALL_DUP, oldfd);
+}
+
+int __dup2(int oldfd, int newfd)
+{
+	syscall2(SYSCALL_DUP2, oldfd, newfd);
+}
+int dup2(int oldfd, int newfd) __attribute__((weak, alias("__dup2")));

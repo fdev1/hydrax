@@ -13,7 +13,7 @@
  * 
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/video.h>
 
 #define MEM_CHAR(c)	(c | (attributeByte << 8))

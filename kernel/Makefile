@@ -20,7 +20,7 @@ LDFLAGS=-melf_i386 -Tarch/x86/hydrax.ld -Map hydrax.map
 
 SOURCES=arch/x86/boot.o \
 	arch/x86/isr.o \
-	arch/x86/platform.o \
+	arch/x86/arch.o \
 	arch/x86/timer.o \
 	arch/x86/video.o \
 	arch/x86/scheduler.o \

@@ -12,7 +12,7 @@
  * permission from the author.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <printk.h>
 #include <isr.h>
 #include <kheap.h>

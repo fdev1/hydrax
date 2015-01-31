@@ -16,7 +16,7 @@
 #ifndef __VFS_H__
 #define __VFS_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <mutex.h>
 #include <semaphore.h>
 #include <dirent.h>

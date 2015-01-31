@@ -13,15 +13,16 @@
  * 
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <scheduler.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 
+#define CONFIG_DEFAULT_HOST_NAME		("hydrax")
 
-static char hostname[HOST_NAME_MAX + 1] = "";
+static char hostname[HOST_NAME_MAX + 1] = CONFIG_DEFAULT_HOST_NAME;
 
 
 /*

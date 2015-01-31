@@ -16,7 +16,7 @@
 #ifndef __MULTIBOOT_H__
 #define __MULTIBOOT_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 #define MULTIBOOT_FLAG_MEM     0x001
 #define MULTIBOOT_FLAG_DEVICE  0x002

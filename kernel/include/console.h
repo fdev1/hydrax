@@ -16,7 +16,7 @@
 #ifndef __VIDEO_H__
 #define __VIDEO_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 
 /*

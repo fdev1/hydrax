@@ -13,7 +13,7 @@
  * 
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <io.h>
 #include <scheduler.h>
 #include <vfs.h>

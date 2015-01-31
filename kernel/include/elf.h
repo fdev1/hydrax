@@ -1,7 +1,7 @@
 #ifndef __ELF_H__
 #define	__ELF_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 /* Type for a 16-bit quantity.  */
 typedef uint16_t Elf32_Half;

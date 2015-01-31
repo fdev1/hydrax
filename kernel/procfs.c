@@ -12,7 +12,7 @@
  * permission from the author.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <scheduler.h>
 #include <vfs.h>
 #include <procfs.h>

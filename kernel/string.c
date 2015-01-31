@@ -12,13 +12,14 @@
  * permission from the author.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <assert.h>
 
 static char buff[11];
 
-// Compare two strings. Should return -1 if 
-// str1 < str2, 0 if they are equal or 1 otherwise.
+/*
+ * Compare two strings.
+ */
 int strcmp(const char *str1, const char *str2)
 {
       int i = 0;
@@ -55,8 +56,9 @@ char *strcpy(char *dest, const char *src)
 	return dest;
 }
 
-// Concatenate the NULL-terminated string src onto
-// the end of dest, and return dest.
+/*
+ * Concatenate two trings.
+ */
 char *strcat(char *dest, const char *src)
 {
 	while (*dest != NULL)
@@ -149,13 +151,6 @@ char *itox(unsigned int val)
 	b = buff;
 	i = 0;
 
-	//while (buff[i] == '0')
-	//	i++;
-
-        //while (i <= 9)
-	//	*b++ = buff[i++];
-
 	return buff;
-
 }
 

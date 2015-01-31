@@ -11,7 +11,7 @@
  * only. It may not be distributed without written 
  * permission from the author.
  */
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <idle.h>
 #include <printk.h>
 

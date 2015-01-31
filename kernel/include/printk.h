@@ -16,7 +16,7 @@
 #ifndef __PRINTK_H__
 #define __PRINTK_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 void kprintf(const char *fmt, ...);
 

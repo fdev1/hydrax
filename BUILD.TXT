@@ -1,7 +1,9 @@
 Requirements
 ============
 
-- GCC
+- x86 GCC
+- x86 GAS
+- GRUB2
 - mtools
 
 Build

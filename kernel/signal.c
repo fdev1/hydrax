@@ -12,7 +12,7 @@
  * permission from the author.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <signal.h>
 #include <unistd.h>
 #include <printk.h>

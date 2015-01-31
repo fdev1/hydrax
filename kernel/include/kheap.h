@@ -16,7 +16,7 @@
 #ifndef __KMALLOC_H__
 #define __KMALLOC_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 typedef struct __kheap
 {

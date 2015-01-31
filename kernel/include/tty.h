@@ -16,7 +16,7 @@
 #ifndef __TTY_H__
 #define __TTY_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 void tty_init(void);
 

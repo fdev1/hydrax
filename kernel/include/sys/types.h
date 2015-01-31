@@ -1,7 +1,7 @@
 #ifndef __SYS_TYPES_H__
 #define __SYS_TYPES_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 typedef int32_t size_t;
 typedef uint32_t ssize_t;

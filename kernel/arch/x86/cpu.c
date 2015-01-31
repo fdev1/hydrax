@@ -13,7 +13,7 @@
  *
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/cpu.h>
 #include <printk.h>
 #include <memory.h>

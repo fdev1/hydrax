@@ -13,7 +13,7 @@
  * 
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/scheduler.h>
 #include <mmu.h>
 #include <printk.h>

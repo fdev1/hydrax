@@ -16,25 +16,8 @@
 #ifndef __INITRD_H__
 #define __INITRD_H__
 
-#include "arch/platform.h"
-#include "vfs.h"
-
-#if 0
-typedef struct
-{
-    uint32_t nfiles;
-} 
-initrd_header_t;
-
-typedef struct
-{
-	uint8_t magic;
-	char name[64];
-	uint32_t offset;
-	uint32_t length;
-} 
-initrd_file_header_t;
-#endif
+#include <arch/arch.h>
+#include <vfs.h>
 
 /*
  * initialize the initrd and return it's node

@@ -13,7 +13,7 @@
  * 
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <printk.h>
 #include <symbols.h>
 #include <unistd.h>

@@ -1,3 +1,3 @@
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <unistd.h>
 

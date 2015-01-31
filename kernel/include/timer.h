@@ -16,7 +16,7 @@
 #ifndef __TIMER_H__
 #define __TIMER_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 typedef uint32_t tticks_t;
 

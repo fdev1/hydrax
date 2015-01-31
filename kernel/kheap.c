@@ -12,11 +12,11 @@
  * permission from the author.
  */
 
-#include "arch/x86/platform.h"
-#include "kheap.h"
-#include "mmu.h"
+#include <arch/arch.h>
+#include <kheap.h>
+#include <mmu.h>
+#include <printk.h>
 #include "bget/bget.h"
-#include "printk.h"
 
 #define KHEAP_DEBUG		0x0
 #define KHEAP_START         	0xC0000000

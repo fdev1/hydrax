@@ -16,7 +16,7 @@
 #ifndef __ELFLDR_H__
 #define __ELFLDR_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <vfs.h>
 
 intptr_t elf_load(vfs_node_t *node);

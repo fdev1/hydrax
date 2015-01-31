@@ -3,7 +3,7 @@
  * Copyright (c) 2014 Fernando Rodriguez.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/video.h>
 #include <kbd.h>
 #include <printk.h>

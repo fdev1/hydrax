@@ -1,7 +1,7 @@
 #ifndef __PTHREAD_H__
 #define __PTHREAD_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <unistd.h>
 
 typedef struct __pthread_attr

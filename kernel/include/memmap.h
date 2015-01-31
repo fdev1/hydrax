@@ -16,7 +16,7 @@
 #ifndef __MEMMAP_H__
 #define __MEMMAP_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <mutex.h>
 
 #define memmap_page_index(a) (a / (CHAR_BIT * sizeof(uint32_t)))

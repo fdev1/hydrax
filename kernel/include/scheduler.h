@@ -16,7 +16,7 @@
 #ifndef __SCHEDULER_H__
 #define __SCHEDULER_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/scheduler.h>
 #include <mutex.h>
 #include <signal.h>

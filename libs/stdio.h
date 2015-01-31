@@ -1,7 +1,7 @@
 #ifndef __STDIO_H__
 #define __STDIO_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 #define STDIN		(0)
 #define STDOUT 		(1)

@@ -16,7 +16,7 @@
 #ifndef __DIRENT_H__
 #define __DIRENT_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 /*
  * dirent structure

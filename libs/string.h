@@ -1,7 +1,7 @@
 #ifndef ITOA_H
 #define ITOA_H
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 /*
  * itoa

@@ -12,7 +12,7 @@
  * permission from the author.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <mutex.h>
 #include <kheap.h>
 #include <scheduler.h>

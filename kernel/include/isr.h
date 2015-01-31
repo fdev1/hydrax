@@ -16,7 +16,7 @@
 #ifndef __ISR_H__
 #define __ISR_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/isr.h>
 
 /*

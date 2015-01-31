@@ -17,7 +17,7 @@
 #endif
 #define KERNEL_CODE
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <initrd.h>
 #include <kheap.h>
 #include <memory.h>

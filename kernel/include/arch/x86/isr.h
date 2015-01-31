@@ -16,7 +16,7 @@
 #ifndef __ARCH_ISR_H__
 #define __ARCH_ISR_H__
 
-#include "platform.h"
+#include <arch/arch.h>
 
 #define IRQ0 32
 #define IRQ1 33

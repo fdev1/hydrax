@@ -16,7 +16,7 @@
 #ifndef __CPU_H__
 #define __CPU_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 /*
  * EFLAGS register structure

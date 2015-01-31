@@ -1,7 +1,7 @@
-#include <arch/platform.h>
-#include <arch/stdarg.h>
-#include "stdio.h"
-#include "unistd.h"
+#include <arch/arch.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <unistd.h>
 
 
 void vprintf(const char *fmt, va_list *args);

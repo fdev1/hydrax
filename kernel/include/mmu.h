@@ -16,7 +16,7 @@
 #ifndef __MMU_H__
 #define __MMU_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <isr.h>
 #include <multiboot.h>
 #include <memmap.h>

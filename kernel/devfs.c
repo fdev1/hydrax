@@ -1,4 +1,4 @@
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <kheap.h>
 #include <vfs.h>
 #include <printk.h>

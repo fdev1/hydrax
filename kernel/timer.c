@@ -12,7 +12,7 @@
  * permission from the author.
  */
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 #include <arch/timer.h>
 #include <timer.h>
 #include <isr.h>

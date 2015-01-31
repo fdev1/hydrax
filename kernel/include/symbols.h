@@ -16,7 +16,7 @@
 #ifndef __SYMBOLS_H__
 #define __SYMBOLS_H__
 
-#include <arch/platform.h>
+#include <arch/arch.h>
 
 void symbols_init(void);
 char* getsym(uint32_t addr);

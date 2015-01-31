@@ -15,7 +15,7 @@
 SOURCES=unistd.o string.o stdio.o start.o bget/bget.o malloc.o
 PTHREAD=pthread.o
 
-CFLAGS=-g -m32 -static -nostdlib -nostdinc -fno-builtin -I. -I../kernel/include -fno-stack-protector
+CFLAGS=-m32 -static -nostdlib -nostdinc -fno-builtin -I. -I../kernel/include -fno-stack-protector
 ARFLAGS=mcs
 
 all: libc pthread

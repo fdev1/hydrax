@@ -56,8 +56,17 @@
 #define SYSCALL_CLONE			(32)
 #define SYSCALL_GETTID			(33)
 #define SYSCALL_DUP2			(34)
+#define SYSCALL_SYNC			(35)
+#define SYSCALL_CHOWN			(36)
+#define SYSCALL_CHROOT			(37)
+#define SYSCALL_FCNTL			(38)
+#define SYSCALL_FSYNC			(39)
+#define SYSCALL_SETHOSTNAME		(40)
+#define SYSCALL_GETHOSTNAME		(41)
+#define SYSCALL_WAIT			(42)
+#define SYSCALL_READLINK			(43)
 
-#define SYSCALL_COUNT		(35)
+#define SYSCALL_COUNT			(44)
 
 /*
  * initialize system call interface

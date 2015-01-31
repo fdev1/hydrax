@@ -277,6 +277,56 @@ int dup2(int oldfd, int newfd)
 }
 
 /*
+ * Flush file system caches.
+ */
+int sync(void)
+{
+	return ENOSYS;
+}
+
+/*
+ * Flush the buffer for an open file descriptor.
+ */
+int fsync(int fd)
+{
+	return sync();
+}
+
+/*
+ * Change the owner of a file
+ */
+int chown(const char *path, uid_t uid, gid_t gid)
+{
+	return ENOSYS;
+}
+
+/*
+ * Change root directory.
+ */
+int chroot(const char *path)
+{
+	return ENOSYS;
+}
+
+int kfcntl(int fd, int cmd, void *args)
+{
+	return ENOSYS;
+}
+
+int fcntl(int fd, int cmd, ...)
+{
+	return ENOSYS;
+}
+
+/*
+ * Read value of a symbolic link
+ */
+ssize_t readlink(const char *path, char *buf, size_t bufsize)
+{
+	return ENOSYS;
+}
+
+/*
  * Create a pipe.
  */
 int pipe(int pipefd[2])
@@ -527,7 +577,7 @@ char *getcwd(char *buf, size_t size)
 /*
  * Send an IOCTL request to a device
  */
-int ioctl(int fd, unsigned long request, ...)
+int ioctl(int fd, unsigned int request, ...)
 {
 	file_t *f;
 	f = get_file_descriptor(fd);

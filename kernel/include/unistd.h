@@ -173,7 +173,7 @@ int setegid(gid_t gid);
 /*
  * Send IOCTL request to device driver.
  */
-int ioctl(int fd, unsigned long request, ...);
+int ioctl(int fd, unsigned int request, ...);
 
 /*
  * Duplicate a file descriptor.
@@ -201,6 +201,53 @@ pid_t gettid(void);
  * task_id.
  */
 int killtask(pid_t tid, int signum);
+
+/*
+ * Flush filesystem buffers.
+ */
+int sync(void);
+
+/*
+ * Change the owner of a file
+ */
+int chown(const char *path, uid_t uid, gid_t gid);
+
+/*
+ * Change root directory.
+ */
+int chroot(const char *path);
+
+/*
+ * Execute command on a file.
+ */
+int fcntl(int fd, int cmd, ...);
+int kfcntl(int fd, int cmd, void *args);
+
+/*
+ * Flush the buffer for an open file descriptor.
+ */
+int fsync(int fd);
+
+/*
+ * Gets the hostname.
+ */
+int gethostname(char *name, size_t len);
+
+/*
+ * Set the hostname
+ */
+int sethostname(const char *name, size_t len);
+
+/*
+ * Wait for a child process to exit.
+ */
+pid_t wait(int *status);
+
+/*
+ * Read value of a symbolic link
+ */
+ssize_t readlink(const char *path, char *buf, size_t bufsize);
+
 
 #endif
 

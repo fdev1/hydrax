@@ -727,7 +727,7 @@ int waitid(pid_t id, int type)
 	return ENOSYS;
 }
 
-int wait(int *status)
+pid_t wait(int *status)
 {
 	task_t *tmp;
 	

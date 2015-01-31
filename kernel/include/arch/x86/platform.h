@@ -40,6 +40,7 @@ typedef unsigned long long uint64_t;
 
 
 typedef int size_t;
+typedef int ssize_t;
 typedef int pid_t;
 typedef unsigned int uid_t;
 typedef unsigned int gid_t;

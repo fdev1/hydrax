@@ -25,7 +25,7 @@
 /*
  * test system call
  */
-/*static*/ int syscall0(char *s)
+static int syscall0(char *s)
 {
 	kprintf("%s\n", s);
 	arch_dump_stack_trace();
@@ -41,6 +41,10 @@ syscall_t;
 
 /* 
  * system call table
+ * 
+ * TODO: Make this an array of function pointers
+ * since argc is no longer used.
+ * 
  */
 static syscall_t syscalls[] =
 {
@@ -79,51 +83,16 @@ static syscall_t syscalls[] =
 	{ &clone, 1 },
 	{ &gettid, 0 },
 	{ &dup2, 2 },
+	{ &sync, 0 },
+	{ &chown, 3 },
+	{ &chroot, 1 },
+	{ &kfcntl, 3 },
+	{ &fsync, 1 },
+	{ &sethostname, 2 },
+	{ &gethostname, 2 },
+	{ &wait, 1 },
+	{ &readlink, 3 }
 };
-
-/*
- * performs a system call.
- * This function is meant to be called from userland only
- * and will eventually be removed from the kernel.
- */
-#if 0
-int syscall(unsigned int num, ...)
-{
-	int ret;
-	va_list args;
-	unsigned int arg1, arg2, arg3;
-	
-	switch (syscalls[num].argc)
-	{
-		case 0:
-			asm volatile("int $0x30" : "=a" (ret) : "0" (num));
-			break;
-		case 1:
-			va_start(args, num);
-			arg1 = (unsigned int) va_arg(args, unsigned int);
-			asm volatile("int $0x30" : "=a" (ret) : "0" (num), "b" (arg1));
-			return ret;
-		case 2:
-			va_start(args, num);
-			arg1 = (unsigned int) va_arg(args, unsigned int);
-			arg2 = (unsigned int) va_arg(args, unsigned int);
-			asm volatile("int $0x30" : "=a" (ret) : "0" (num), "b" (arg1), "c" (arg2));
-			return ret;
-		case 3:
-			va_start(args, num);
-			arg1 = (unsigned int) va_arg(args, unsigned int);
-			arg2 = (unsigned int) va_arg(args, unsigned int);
-			arg3 = (unsigned int) va_arg(args, unsigned int);
-			asm volatile("int $0x30" : "=a" (ret) : "0" (num), "b" (arg1), "c" (arg2), "d" (arg3));
-			return ret;
-		default:
-			assert(0);
-			return 0;
-
-	}
-	return 0;	/* clang	 shows warning without this */
-}
-#endif
 
 /*
  * syscall handler

@@ -55,6 +55,7 @@ SOURCES=arch/x86/boot.o \
 	signal.o \
 	fork.o \
 	env.o \
+	system.o \
 	main.o
 
 all: kernel

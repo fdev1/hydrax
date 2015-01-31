@@ -21,6 +21,7 @@
 #include <io.h>
 #include <time.h>
 #include <errno.h>
+#include <unistd.h>
 
 /*
  * test system call

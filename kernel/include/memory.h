@@ -16,7 +16,7 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-#include <arch/platform.h>
+#include <sys/types.h>
 #include <assert.h>
 
 /*

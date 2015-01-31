@@ -16,7 +16,7 @@
 #ifndef __TIME_H__
 #define __TIME_H__
 
-#include <arch/platform.h>
+#include <sys/types.h>
 
 time_t time(time_t *t);
 

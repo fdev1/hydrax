@@ -16,6 +16,7 @@
 #ifndef __ERRNO_H__
 #define __ERRNO_H__
 
+#define ESUCCESS		(0)
 #define EACCES			(-2)
 #define EBADF			(-3)
 #define EFAULT			(-4)

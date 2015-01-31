@@ -16,7 +16,7 @@
 #ifndef __MUTEX_H__
 #define __MUTEX_H__
 
-#include <arch/platform.h>
+#include <sys/types.h>
 #include <assert.h>
 
 /*

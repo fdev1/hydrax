@@ -25,6 +25,8 @@
 #define MAX_FILENAME				(255)
 #define MAX_PATH					(255)
 #define MAX_PATH_NODES				(64)
+#define HOST_NAME_MAX				(255)
+
 
 /*
  * fixed with integers
@@ -37,21 +39,13 @@ typedef unsigned char uint8_t;
 typedef char int8_t;
 typedef long long int64_t;
 typedef unsigned long long uint64_t;
-
-
-typedef int size_t;
-typedef int ssize_t;
-typedef int pid_t;
-typedef unsigned int uid_t;
-typedef unsigned int gid_t;
-typedef unsigned int time_t;
 typedef int bool;
 
 /*
  * pointer sized datatypes
  */
 typedef unsigned int intptr_t;
-typedef unsigned int pintptr_t;
+typedef unsigned int pintptr_t;	/* physical pointer size */
 
 /*
  * Stores the state of the execution environment
@@ -108,11 +102,11 @@ void reboot(void);
 
 
 #if 0
-#define likely(x)      				(x)
-#define unlikely(x)    				(x)
+#	define likely(x)      				(x)
+#	define unlikely(x)    				(x)
 #else
-#define likely(x)      				__builtin_expect(!!(x), 1)
-#define unlikely(x)    				__builtin_expect(!!(x), 0)
+#	define likely(x)      				(__builtin_expect(!!(x), 1))
+#	define unlikely(x)    				(__builtin_expect(!!(x), 0))
 #endif
 
 /*
@@ -126,7 +120,7 @@ void arch_dump_stack_trace(void);
 /*
  * Allocate stack memory.
  */
-static inline void *alloca(size_t sz)
+static inline void *alloca(int sz)
 {
 	unsigned char *p;
 	if (unlikely(sz & 0x3))

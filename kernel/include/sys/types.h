@@ -3,6 +3,12 @@
 
 #include <arch/platform.h>
 
+typedef int32_t size_t;
+typedef uint32_t ssize_t;
+typedef int32_t pid_t;
+typedef uint32_t uid_t;
+typedef uint32_t gid_t;
+typedef uint32_t time_t;
 typedef uint32_t dev_t;
 typedef uint32_t ino_t;
 typedef uint32_t mode_t;

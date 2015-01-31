@@ -27,6 +27,7 @@ SOURCES=arch/x86/boot.o \
 	arch/x86/cpu.o \
 	arch/x86/cmos.o \
 	arch/x86/rtc.o \
+	arch/x86/kbd.o \
 	bget/bget.o \
 	console.o \
 	string.o \
@@ -40,7 +41,6 @@ SOURCES=arch/x86/boot.o \
 	initrd.o \
 	scheduler.o \
 	symbols.o \
-	kbd.o \
 	idle.o \
 	syscall.o \
 	elfldr.o \

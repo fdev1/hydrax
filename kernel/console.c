@@ -5,7 +5,7 @@
 
 #include <arch/arch.h>
 #include <arch/video.h>
-#include <kbd.h>
+#include <arch/kbd.h>
 #include <printk.h>
 #include <vfs.h>
 #include <kheap.h>
@@ -34,6 +34,9 @@ void console_early_init(void)
 void console_init(void)
 {
 	int r;
+	
+	kbd_init();
+	
 	console = (vfs_node_t*) malloc(sizeof(vfs_node_t));
 	if (console == NULL)
 		panic("console_init: out of memory!");

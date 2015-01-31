@@ -14,8 +14,8 @@
  */
 
 #include <arch/arch.h>
+#include <arch/kbd.h>
 #include <console.h>
-#include <kbd.h>
 #include <printk.h>
 #include <vfs.h>
 #include <devfs.h>

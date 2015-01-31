@@ -26,7 +26,6 @@
 #include <kheap.h>
 #include <scheduler.h>
 #include <symbols.h>
-#include <kbd.h>
 #include <idle.h>
 #include <syscall.h>
 #include <elfldr.h>
@@ -53,7 +52,6 @@ int hydrax_init(multiboot_header_t *p_mboot, uint32_t initial_stack)
 	kheap_init();
 	vfs_init(initrd_init(*((uint32_t*) p_mboot->mods_addr)));
 	devfs_init();
-	kbd_init();
 	console_init();
 	tty_init();
 	symbols_init();

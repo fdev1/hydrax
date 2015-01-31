@@ -13,10 +13,10 @@
  */
 
 #include <arch/arch.h>
+#include <arch/kbd.h>
 #include <printk.h>
 #include <isr.h>
 #include <kheap.h>
-#include <kbd.h>
 #include <vfs.h>
 #include <devfs.h>
 #include <string.h>

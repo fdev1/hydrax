@@ -80,7 +80,7 @@ vfs_node_t *initrd_init(uint32_t offset)
 		if (p_node->length > 0)
 		{
 			p_node->data = (void*) (((unsigned int) p_node->data) + offset);
-			p_node->read = (read_type_t) &initrd_read;
+			p_node->read = (vfs_read_fn_t) &initrd_read;
 		}
 		p_node++;
 	}

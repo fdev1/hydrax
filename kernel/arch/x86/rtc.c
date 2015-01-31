@@ -56,7 +56,7 @@ void rtc_init(void)
 		panic("rtc_init: out of memory!");
 	*rtc = vfs_node_init(FS_CHARDEVICE);
 	strcpy(rtc->name, "rtc");
-	rtc->read = (read_type_t) &rtc_read;
+	rtc->read = (vfs_read_fn_t) &rtc_read;
 	rtc->write = NULL;
 
 	r = devfs_mknod(rtc);

@@ -47,14 +47,14 @@ struct vfs_node;
  *
  *
  */
-typedef uint32_t (*read_type_t)(struct vfs_node *node, uint32_t, uint32_t, uint8_t*);
-typedef uint32_t (*write_type_t)(struct vfs_node *node, uint32_t, uint32_t, const uint8_t*);
-typedef void *(*open_type_t)(struct vfs_node *node, const char *path, uint32_t flags);
-typedef void (*close_type_t)(struct vfs_node *node);
-typedef struct dirent * (*readdir_type_t)(struct vfs_node *node, uint32_t index, struct dirent *buf);
-typedef void* (*finddir_type_t)(struct vfs_node *node, char *name);
-typedef struct stat* (*stat_type_t)(struct vfs_node *node, const char *path, struct stat* buf);
-typedef int (*ioctl_type_t)(struct vfs_node *node, unsigned long request, void *last_arg);
+typedef uint32_t (*vfs_read_fn_t)(struct vfs_node *node, uint32_t, uint32_t, uint8_t*);
+typedef uint32_t (*vfs_write_fn_t)(struct vfs_node *node, uint32_t, uint32_t, const uint8_t*);
+typedef void *(*vfs_open_fn_t)(struct vfs_node *node, const char *path, uint32_t flags);
+typedef void (*vfs_close_fn_t)(struct vfs_node *node);
+typedef struct dirent * (*vfs_readdir_fn_t)(struct vfs_node *node, uint32_t index, struct dirent *buf);
+typedef void* (*vfs_finddir_fn_t)(struct vfs_node *node, char *name);
+typedef struct stat* (*vfs_stat_fn_t)(struct vfs_node *node, const char *path, struct stat* buf);
+typedef int (*vfs_ioctl_fn_t)(struct vfs_node *node, unsigned long request, void *last_arg);
 
 
 /*
@@ -76,14 +76,14 @@ typedef struct vfs_node
 	void *data;
 	mutex_t lock;
 	semaphore_t semaphore;
-	read_type_t read;
-	write_type_t write;
-	open_type_t open;
-	close_type_t close;
-	readdir_type_t readdir;
-	finddir_type_t finddir;
-	stat_type_t stat;
-	ioctl_type_t ioctl;
+	vfs_read_fn_t read;
+	vfs_write_fn_t write;
+	vfs_open_fn_t open;
+	vfs_close_fn_t close;
+	vfs_readdir_fn_t readdir;
+	vfs_finddir_fn_t finddir;
+	vfs_stat_fn_t stat;
+	vfs_ioctl_fn_t ioctl;
 	struct vfs_node *parent;
 	struct vfs_node *ptr;
 	struct vfs_node *next;		/* next sibling */

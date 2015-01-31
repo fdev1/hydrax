@@ -173,9 +173,9 @@ int fork(void)
 	/* *procfs_node = vfs_node_init(FS_DIRECTORY); */
 	strcpy(procfs_node->name, itoa(new_tid));
 	procfs_node->parent = procfs;
-	procfs_node->open = (open_type_t) &procfs_open;
-	procfs_node->stat = (stat_type_t) &procfs_stat;
-	procfs_node->readdir = (readdir_type_t) &procfs_readdir;
+	procfs_node->open = (vfs_open_fn_t) &procfs_open;
+	procfs_node->stat = (vfs_stat_fn_t) &procfs_stat;
+	procfs_node->readdir = (vfs_readdir_fn_t) &procfs_readdir;
 	procfs_node->flags = FS_DIRECTORY;
 	procfs_node->next = NULL;
 	vfs_mknod(procfs, procfs_node);
@@ -294,9 +294,9 @@ int clone(void *stack)
 	/* *procfs_node = vfs_node_init(FS_DIRECTORY); */
 	strcpy(procfs_node->name, itoa(new_tid));
 	procfs_node->parent = procfs;
-	procfs_node->open = (open_type_t) &procfs_open;
-	procfs_node->stat = (stat_type_t) &procfs_stat;
-	procfs_node->readdir = (readdir_type_t) &procfs_readdir;
+	procfs_node->open = (vfs_open_fn_t) &procfs_open;
+	procfs_node->stat = (vfs_stat_fn_t) &procfs_stat;
+	procfs_node->readdir = (vfs_readdir_fn_t) &procfs_readdir;
 	procfs_node->flags = FS_DIRECTORY;
 	procfs_node->next = NULL;
 	vfs_mknod(procfs, procfs_node);

@@ -359,8 +359,8 @@ int pipe(int pipefd[2])
 	pipe->semaphore = SEMAPHORE_INITIALIZER(PIPE_BUFFER_SIZE, PIPE_BUFFER_SIZE);
 	
 	*node = VFS_NODE_INITIALIZER(FS_PIPE | FS_AUTOFREE);
-	node->read = (read_type_t) &pipe_read;
-	node->write = (write_type_t) &pipe_write;
+	node->read = (vfs_read_fn_t) &pipe_read;
+	node->write = (vfs_write_fn_t) &pipe_write;
 	node->data = pipe;
 	node->refs = 2;
 	

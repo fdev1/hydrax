@@ -183,7 +183,7 @@ vfs_node_t *procfs_open(vfs_node_t *node, const char *path, uint32_t flags)
 		open_node->gid = 1;
 		open_node->inode = tmp->id;
 		open_node->length = 43;
-		open_node->read = (read_type_t) &procfs_read;
+		open_node->read = (vfs_read_fn_t) &procfs_read;
 		open_node->write = NULL;
 	}
 	else if (!strcmp(path, "environ"))
@@ -200,7 +200,7 @@ vfs_node_t *procfs_open(vfs_node_t *node, const char *path, uint32_t flags)
 		open_node->gid = 1;
 		open_node->inode = tmp->id;
 		open_node->length = 43;
-		open_node->read = (read_type_t) &procfs_read;
+		open_node->read = (vfs_read_fn_t) &procfs_read;
 		open_node->write = NULL;		
 	}
 	else if (!strcmp(path, "memmap"))
@@ -218,7 +218,7 @@ vfs_node_t *procfs_open(vfs_node_t *node, const char *path, uint32_t flags)
 		open_node->gid = 0;
 		open_node->inode = tmp->id;
 		open_node->length = (memmap->length / 32) * 4 ;
-		open_node->read = (read_type_t) &procfs_read;
+		open_node->read = (vfs_read_fn_t) &procfs_read;
 		open_node->write = NULL;				
 	}
 

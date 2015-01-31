@@ -103,8 +103,8 @@ void tty_init(void)
 	strcpy(tty->name, "tty");
 	tty->major = 1;
 	tty->minor = 1;
-	tty->read = (read_type_t) &tty_read;
-	tty->write = (write_type_t) &tty_write;
+	tty->read = (vfs_read_fn_t) &tty_read;
+	tty->write = (vfs_write_fn_t) &tty_write;
 	tty->length = sizeof(vfs_node_t);
 
 	r = devfs_mknod(tty);

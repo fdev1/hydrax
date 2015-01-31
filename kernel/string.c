@@ -13,6 +13,7 @@
  */
 
 #include <arch/platform.h>
+#include <assert.h>
 
 static char buff[11];
 

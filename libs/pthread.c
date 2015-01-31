@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <malloc.h>
+#include <errno.h>
 
 #define INITIAL_STACK_SIZE	(1024)
 

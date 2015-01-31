@@ -17,6 +17,7 @@
 #define __MUTEX_H__
 
 #include <arch/platform.h>
+#include <assert.h>
 
 /*
  * A light mutex that can be used with all

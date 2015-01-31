@@ -14,6 +14,7 @@
  */
 
 #include <arch/platform.h>
+#include <assert.h>
 
 /*
  * read a byte from cmos

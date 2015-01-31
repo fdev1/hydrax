@@ -114,29 +114,6 @@ void reboot(void);
 #define unlikely(x)    				__builtin_expect(!!(x), 0)
 #endif
 
-#if defined(KERNEL_CODE)
-#	ifndef __ASSERT_H__
-#		define __ASSERT_H__
-#		if defined(NDEBUG)
-#			define assert(expr)			(void) 0
-#		else
-#			define assert(expr) 		\
-				if (unlikely(!(expr)))		\
-					arch_panic("assert failed (" #expr ")", __FILE__, __LINE__)
-#		endif
-#	endif
-#else
-#	ifndef __ASSERT_H__
-#		define __ASSERT_H__
-#		include <unistd.h>
-#		if defined(NDEBUG)
-#			define assert(expr)			(void) 0
-#		else
-#			define assert(expr)			exit(-1)
-#		endif
-#	endif
-#endif
-
 /*
  * Atomically exchange a register and memory location
  */

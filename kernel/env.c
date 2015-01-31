@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <memory.h>
+#include <errno.h>
 
 /*
  * Free the environment variables of the current task

@@ -16,26 +16,6 @@
 #ifndef __UNISTD_H__
 #define __UNISTD_H__
 
-/*
- * I believe these go on errno.h
- */
-#define EACCES		(-2)
-#define EBADF		(-3)
-#define EFAULT		(-4)
-#define ELOOP		(-5)	/* too many simbolic links */
-#define ENAMETOOLONG	(-6)
-#define ENOENT		(-7)
-#define ENOMEM		(-8)
-#define ENOTDIR		(-9)
-#define EOVERFLOW	(-10)
-#define ENOSYS		(-12)
-#define ECHILD		(-13)
-#define EINVAL		(-14)
-#define EINTR		(-15)
-#define EPERM		(-16)
-
-
-
 #define MODE_TYPE_DIRECTORY		(0x1)
 #define MODE_TYPE_LINK			(0x2)
 #define MODE_TYPE_MOUNT			(0x4)

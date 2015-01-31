@@ -20,6 +20,7 @@
 #include <printk.h>
 #include <io.h>
 #include <time.h>
+#include <errno.h>
 
 /*
  * test system call

@@ -21,6 +21,7 @@
 #include <io.h>
 #include <kheap.h>
 #include <string.h>
+#include <errno.h>
 
 static pid_t next_pid = 1;
 static pid_t next_tid = 1;

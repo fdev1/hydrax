@@ -29,6 +29,7 @@
 #include <procfs.h>
 #include <dirent.h>
 #include <io.h>
+#include <errno.h>
 
 /*
  * debug symbols

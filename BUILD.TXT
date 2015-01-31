@@ -1,0 +1,12 @@
+Requirements
+============
+
+- GCC
+- mtools
+
+Build
+=====
+
+Just run build.sh
+
+

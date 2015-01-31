@@ -21,6 +21,8 @@
 #include <kheap.h>
 #include <unistd.h>
 #include <semaphore.h>
+#include <assert.h>
+#include <errno.h>
 
 #define PIPE_BUFFER_SIZE		(1024)
 

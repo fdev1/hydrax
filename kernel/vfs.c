@@ -609,7 +609,7 @@ char *vfs_get_path(vfs_node_t *node, char *buf)
 /*
  * Send IOCTL request to device.
  */
-int vfs_ioctl(vfs_node_t *node, unsigned long request, void *last_arg)
+int vfs_ioctl(vfs_node_t *node, unsigned int request, void *last_arg)
 {
 	assert(node != NULL);
 	if (node->ioctl != NULL)

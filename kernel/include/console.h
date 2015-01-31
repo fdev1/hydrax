@@ -18,25 +18,14 @@
 
 #include <arch/arch.h>
 
-
 /*
  *
  */
 void console_init(void);
+
+/*
+ * Initialize the console for write access only
+ */
 void console_early_init(void);
-/*
- *
- */
-void video_put(char c);
-
-/*
- *
- */
-void video_clear();
-
-/*
- *
- */
-void video_put_s(const char *c);
 
 #endif

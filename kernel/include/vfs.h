@@ -54,7 +54,7 @@ typedef void (*vfs_close_fn_t)(struct vfs_node *node);
 typedef struct dirent * (*vfs_readdir_fn_t)(struct vfs_node *node, uint32_t index, struct dirent *buf);
 typedef void* (*vfs_finddir_fn_t)(struct vfs_node *node, char *name);
 typedef struct stat* (*vfs_stat_fn_t)(struct vfs_node *node, const char *path, struct stat* buf);
-typedef int (*vfs_ioctl_fn_t)(struct vfs_node *node, unsigned long request, void *last_arg);
+typedef int (*vfs_ioctl_fn_t)(struct vfs_node *node, unsigned int request, void *last_arg);
 
 
 /*
@@ -204,7 +204,7 @@ char *vfs_get_path(vfs_node_t *node, char *buf);
 /*
  * Send ioctl request to device.
  */
-int vfs_ioctl(vfs_node_t *node, unsigned long request, void *last_arg);
+int vfs_ioctl(vfs_node_t *node, unsigned int request, void *last_arg);
 
 /*
  * Closes a node.

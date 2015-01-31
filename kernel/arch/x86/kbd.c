@@ -20,15 +20,19 @@
 #include <vfs.h>
 #include <devfs.h>
 #include <string.h>
+#include <errno.h>
 
 #if defined(KERNEL_CODE)
-#undef KERNEL_CODE
+#	undef KERNEL_CODE
 #endif
 #define KERNEL_CODE
 
 #define KBD_LEFT_SHIFT		(128)
 #define KBD_RIGHT_SHIFT		(129)
 #define KBD_ALT			(130)
+
+#define KBD_INPUT_BUFFER_SIZE		(1024)
+
 
 typedef struct kbd_handler_list
 {
@@ -38,9 +42,17 @@ typedef struct kbd_handler_list
 }
 kbd_handler_list_t;
 
+static vfs_node_t *kbd = NULL;
 static keymask_t keymask = { 0 };
 static kbd_handler_list_t *handlers = NULL;
 static unsigned char *keymap;
+
+static unsigned char *kbd_input_buffer = NULL;
+static unsigned char *kbd_input_buffer_rhead = NULL;
+static unsigned char *kbd_input_buffer_whead = NULL;
+static unsigned int kbd_input_buffer_len = 0;
+static semaphore_t kbd_semaphore;
+
 
 static unsigned char kbdus[128] =
 {
@@ -133,7 +145,19 @@ static void kbd_input_handler(registers_t *rigs)
 						c -= (97 - 65);
 
 				}
-
+				
+				#if 1
+				if (kbd_input_buffer_len < KBD_INPUT_BUFFER_SIZE)
+				{
+					*kbd_input_buffer_whead++ = c;
+					if (kbd_input_buffer_whead >=
+						&kbd_input_buffer[KBD_INPUT_BUFFER_SIZE])
+						kbd_input_buffer_whead = kbd_input_buffer;
+					kbd_input_buffer_len++;
+					semaphore_signal_sleep(&kbd_semaphore);
+				}
+				
+				#else
 				kbd_handler_list_t *tmp;
 				tmp = handlers;
 				while (tmp != NULL)
@@ -141,9 +165,36 @@ static void kbd_input_handler(registers_t *rigs)
 					tmp->handler(c, keymask);
 					tmp = tmp->next;
 				}
+				#endif
 				break;
 		}
 	}
+}
+
+/*
+ * Read from the keyboard buffer.
+ * This function blocks if the buffer is empty.
+ */
+static int kbd_read(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t *buf)
+{
+	size_t bytes_read = 0;
+	while (len > 0)
+	{
+		semaphore_waitsleep(&kbd_semaphore);
+		*buf++ = *kbd_input_buffer_rhead++;
+		if (kbd_input_buffer_rhead >=
+			&kbd_input_buffer[KBD_INPUT_BUFFER_SIZE])
+			kbd_input_buffer_rhead = kbd_input_buffer;
+		len--;
+		kbd_input_buffer_len--;
+		bytes_read++;
+	};
+	return bytes_read;
+}
+
+static int kbd_ioctl(vfs_node_t *node, unsigned int request, void *last_arg)
+{
+	return ENOSYS;
 }
 
 /*
@@ -152,19 +203,25 @@ static void kbd_input_handler(registers_t *rigs)
 void kbd_init(void)
 {
 	int r;
-	vfs_node_t *kbd;
-	kbd = (vfs_node_t*) malloc(sizeof(vfs_node_t)); /* we dont need to track this */
+	kbd = (vfs_node_t*) malloc(sizeof(vfs_node_t));
 	if (kbd == NULL)
 		panic("kbd: out of memory!");
 	*kbd = vfs_node_init(FS_CHARDEVICE);
 	strcpy(kbd->name, "kbd");
-	kbd->read = NULL;
-	kbd->write = NULL;
-
+	kbd->read = (vfs_read_fn_t) &kbd_read;
+	kbd->ioctl = (vfs_ioctl_fn_t) &kbd_ioctl;
 	r = devfs_mknod(kbd);
 	if (r == -1)
 		panic("kbd: could not create dev node!");
 	keymap = kbdus;
+	
+	/*
+	 * allocate input buffer and register keyboard handler
+	 */
+	kbd_input_buffer = (unsigned char*) malloc(KBD_INPUT_BUFFER_SIZE);
+	if (kbd_input_buffer == NULL)
+		panic("tty_init: out of memory!");
+	kbd_semaphore = SEMAPHORE_INITIALIZER(KBD_INPUT_BUFFER_SIZE, KBD_INPUT_BUFFER_SIZE);
 	register_isr(IRQ1, &kbd_input_handler);
 	printk(7, "kbd: keyboard ready");
 }
@@ -204,6 +261,3 @@ void* kbd_register_handler(kbd_handler_t handler)
 	}
 	return (void*) h;
 }
-
-
-

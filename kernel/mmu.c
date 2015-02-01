@@ -130,15 +130,20 @@ memmap_t *mmu_get_physical_map(void)
 
 /*
  * Free physical page.
- * NOTE: We're temporarily using this function
- * from elfldr so don't uncomment the static.
  */
-/*static*/ void mmu_frame_free(page_t *page)
+static void mmu_frame_free(page_t *page)
 {
 	assert(page->frame != 0x0);
-	mutex_busywait(&physical_memmap.lock);
-	memmap_clear_page(&physical_memmap, page->frame * MMU_PAGE_SIZE);
-	mutex_release(&physical_memmap.lock);
+
+	mutex_wait(&frame_refs_lock);
+	if (--frame_refs[page->frame] == 0)
+	{
+		mutex_busywait(&physical_memmap.lock);
+		memmap_clear_page(&physical_memmap, page->frame * MMU_PAGE_SIZE);
+		mutex_release(&physical_memmap.lock);
+	}
+	mutex_release(&frame_refs_lock);
+	
 	page->frame = 0x0;
 	page->present = 0;
 	page->accessed = 0;
@@ -146,6 +151,7 @@ memmap_t *mmu_get_physical_map(void)
 	page->rw = 0;
 	page->user = 0;
 }
+
 
 /*
  * Allocates a physical frame for a page. If the page is already
@@ -387,11 +393,15 @@ void kfree(void* ptr)
 {
 	unsigned int i;
 	intptr_t addr;
+	page_directory_t *dir;
+	memmap_t *memmap;
 	
 	buffer_t **tmp, **buf, *parent;
 	tmp = &kernel_buffers;
 	buf = tmp;
 	parent = NULL;
+	dir = &kernel_directory;
+	memmap = &kernel_memmap;
 	while(*tmp != NULL && (*tmp)->address != (intptr_t) ptr)
 	{
 		parent = *tmp;
@@ -404,6 +414,8 @@ void kfree(void* ptr)
 		tmp = &current_task->buffers;
 		buf = tmp;
 		parent = NULL;
+		dir = current_directory;
+		memmap = arch_get_memmap(current_task->machine_state);
 		while(*tmp != NULL && (void*) (*tmp)->address != ptr)
 		{
 			parent = *tmp;
@@ -419,7 +431,8 @@ void kfree(void* ptr)
 	addr = (intptr_t) (*tmp)->address;
 	for (i = 0; i < (*tmp)->pages; i++)
 	{
-		mmu_frame_free(mmu_get_page(addr, 0, current_directory));
+		mmu_frame_free(mmu_get_page(addr, 0, dir));
+		memmap_clear_page(memmap, addr);
 		addr += 0x1000;
 	}
 	
@@ -433,8 +446,7 @@ void kfree(void* ptr)
 	}
 	else
 	{
-		/* this can be removed as it'll never happen */
-		buf = NULL;
+		*buf = (*tmp)->next;
 		free((void*) *tmp); /* free from heap */
 	}
 }
@@ -862,14 +874,8 @@ void mmu_destroy_directory(page_directory_t *directory)
 			{
 				page_info_t *page_info;
 				page_info = &table->pages_info[j];
-				
 				if (table->pages[j].frame != NULL)
-				{
-					mutex_busywait(&frame_refs_lock);
-					if (--frame_refs[table->pages[j].frame] == 0)
-						mmu_frame_free(&table->pages[j]);
-					mutex_release(&frame_refs_lock);
-				}
+					mmu_frame_free(&table->pages[j]);
 			}
 			if (--directory->tables[i]->refs == 0)
 				kfree((void*) table);

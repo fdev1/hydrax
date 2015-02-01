@@ -283,7 +283,7 @@ int exit(int exit_code)
 {
 	task_t *tmp, *parent;
 	assert(current_task->id != 0);
-	assert(current_task->parent != NULL);
+	/* assert(current_task->parent != NULL); */
 	assert(current_task->threads != NULL);
 	
 	/*

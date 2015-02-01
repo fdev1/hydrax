@@ -30,6 +30,8 @@ int main()
 	int tid;
 	pthread_t thread;
 	
+	mutex = MUTEX_INITIALIZER;
+	
 	tid = pthread_create(&thread, NULL, &thread_entry, (void*)&thread);
 	if (tid < 0)
 	{

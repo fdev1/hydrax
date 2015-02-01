@@ -227,19 +227,16 @@ int fork(void)
 	if (current_task->buffers != NULL)
 	{
 		buffer_t **tmp, **next, *buf;
-		next = NULL;
 		tmp = &current_task->buffers;
+		next = &new_task->buffers;
 		while (*tmp != NULL)
 		{
 			buf = malloc(sizeof(buffer_t));
 			assert(buf != NULL);
-			
-			if (next != NULL)
-				*next = buf;
-			
 			buf->address = (*tmp)->address;
 			buf->pages = (*tmp)->pages;
 			buf->next = NULL;
+			*next = buf;
 			next = &buf->next;
 			tmp = &(*tmp)->next;
 		}

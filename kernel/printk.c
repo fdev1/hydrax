@@ -21,7 +21,7 @@
 #include <timer.h>
 #include <vfs.h>
 
-extern vfs_node_t *console;
+extern vfs_node_t console;
 
 void kvprintf(const char *fmt, va_list *args);
 
@@ -33,7 +33,7 @@ void printk(const unsigned int level, const char *fmt, ...)
 {
 	static mutex_t s = MUTEX_INITIALIZER;
 	va_list args;
-
+	
 	va_start(args, fmt);	
 	mutex_busywait(&s);
 	kprintf("\r");
@@ -76,7 +76,7 @@ void kvprintf(const char *fmt, va_list *args)
 	{
 		if (*fmt != '%')
 		{
-			vfs_write(console, 0, 1, fmt++);
+			vfs_write(&console, 0, 1, fmt++);
 		}
 		else
 		{
@@ -89,18 +89,18 @@ void kvprintf(const char *fmt, va_list *args)
 						/* TODO: Use vfs_write_s instead */
 						char *s;
 						s = itox(u);
-						vfs_write(console, 0, strlen(s), s);
+						vfs_write(&console, 0, strlen(s), s);
 					}
 					else
 					{
 						c = '0';
-						vfs_write(console, 0, 1, &c);
+						vfs_write(&console, 0, 1, &c);
 					}
 					fmt += 2;
 					break;
 				case 'c' :
 					c = (char) va_arg(*args, int);
-					vfs_write(console, 0, 1, &c);
+					vfs_write(&console, 0, 1, &c);
 					break;
 					
 				case 'i' :
@@ -109,22 +109,22 @@ void kvprintf(const char *fmt, va_list *args)
 					{
 						char *s;
 						s = itoa(i);
-						vfs_write(console, 0, strlen(s), s);
+						vfs_write(&console, 0, strlen(s), s);
 					}
 					else
 					{
 						c = '0';
-						vfs_write(console, 0, 1, &c);
+						vfs_write(&console, 0, 1, &c);
 					}
 					fmt += 2;
 					break;
 				case 's' :
 					s = (char*) va_arg(*args, char*);
-					vfs_write(console, 0, strlen(s), s);
+					vfs_write(&console, 0, strlen(s), s);
 					fmt += 2;
 					break;
 				default:
-					vfs_write(console, 0, 1, fmt++);
+					vfs_write(&console, 0, 1, fmt++);
 			}
 
 		}		

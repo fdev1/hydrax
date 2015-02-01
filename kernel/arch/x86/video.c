@@ -15,6 +15,9 @@
 
 #include <arch/arch.h>
 #include <arch/video.h>
+#include <vfs.h>
+#include <kheap.h>
+#include <string.h>
 
 #define MEM_CHAR(c)	(c | (attributeByte << 8))
 
@@ -22,7 +25,7 @@ static uint8_t cur_x = 0;
 static uint8_t cur_y = 0;
 static uint16_t *vmem = (uint16_t*) 0xB8000;
 static const uint8_t attributeByte = (0 /*black*/ << 4) | (7 /*white*/ & 0x0F);
-
+static vfs_node_t video;
 /*
  * Move the cursor
  */
@@ -59,7 +62,9 @@ static void scroll()
 void arch_video_init()
 {
 	arch_video_clear();
-	cur_x = cur_y = 0;
+	video = VFS_NODE_INITIALIZER(FS_CHARDEVICE);
+	strcpy(video.name, "video");
+	video.write = NULL;
 }
 
 void arch_video_put(char c)

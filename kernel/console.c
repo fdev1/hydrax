@@ -24,7 +24,7 @@
 
 #define MEM_CHAR(c)	(c | (attributeByte << 8))
 
-vfs_node_t *console;
+vfs_node_t console;
 
 static vfs_node_t *kbd;
 static bool early_init = false;
@@ -62,12 +62,9 @@ void console_early_init(void)
 {
 	arch_video_init();
 	early_init = true;
-	console = (vfs_node_t*) malloc(sizeof(vfs_node_t));
-	if (console == NULL)
-		panic("console: out of memory!");
-	*console = VFS_NODE_INITIALIZER(FS_CHARDEVICE);
-	strcpy(console->name, "console");
-	console->write = (vfs_write_fn_t) &console_write;
+	console = VFS_NODE_INITIALIZER(FS_CHARDEVICE);
+	strcpy(console.name, "console");
+	console.write = (vfs_write_fn_t) &console_write;
 }
 
 /*
@@ -83,9 +80,9 @@ void console_init(void)
 	kbd = vfs_open("/dev/kbd", NULL);
 	if (kbd == NULL)
 		panic("console: cannot open /dev/kbd!");
-	console->read = (vfs_read_fn_t) &console_read;
+	console.read = (vfs_read_fn_t) &console_read;
 	
-	r = devfs_mknod(console);
+	r = devfs_mknod(&console);
 	if (r == -1)
 		panic("console: could not create dev node!");
 	printk(7, "console: console ready");

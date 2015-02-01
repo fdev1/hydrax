@@ -103,6 +103,7 @@ void scheduler_init(void)
 	idle_task.cwd = NULL;
 	idle_task.argv = NULL;
 	idle_task.envp = NULL;
+	idle_task.buffers = NULL;
 	idle_task.procfs_node = NULL;
 	idle_task.parent = NULL;
 	idle_task.next_thread = NULL;
@@ -436,6 +437,9 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	node = vfs_open(path, NULL);
 	if (node == NULL)
 		return ENOENT;
+	
+	while (current_task->buffers != NULL)
+		kfree((void*) current_task->buffers->address);
 	
 	vaddr = elf_load(node);
 	if (vaddr == NULL)

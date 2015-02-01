@@ -109,7 +109,7 @@ void arch_move_stack(void *new_stack_start, uint32_t size)
 	
 	/* allocate stack in user memory */
 	virt = kalloc(size, i + 0x1000, &phys, 
-		KALLOC_OPTN_ALIGN | KALLOC_OPTN_NOCOW | KALLOC_OPTN_NOSHARE);
+		KALLOC_OPTN_ALIGN | KALLOC_OPTN_NOCOW | KALLOC_OPTN_NOSHARE | KALLOC_OPTN_NOFREE);
 	assert(virt != NULL);
 
 	if (SCHED_DEBUG_MOVE_STACK)

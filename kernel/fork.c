@@ -214,6 +214,7 @@ int fork(void)
 	new_task->env_lock = MUTEX_INITIALIZER;
 	new_task->cwd = current_task->cwd;
 	new_task->argv = NULL;
+	new_task->buffers = NULL;
 	new_task->procfs_node = procfs_node;
 	new_task->parent = current_task;
 	new_task->threads = new_task;
@@ -222,6 +223,27 @@ int fork(void)
 	new_task->next_child = NULL;
 	new_task->next_thread = NULL;
 	new_task->next = NULL;
+	
+	if (current_task->buffers != NULL)
+	{
+		buffer_t **tmp, **next, *buf;
+		next = NULL;
+		tmp = &current_task->buffers;
+		while (*tmp != NULL)
+		{
+			buf = malloc(sizeof(buffer_t));
+			assert(buf != NULL);
+			
+			if (next != NULL)
+				*next = buf;
+			
+			buf->address = (*tmp)->address;
+			buf->pages = (*tmp)->pages;
+			buf->next = NULL;
+			next = &buf->next;
+			tmp = &(*tmp)->next;
+		}
+	}
 	
 	/*
 	 * Add the task to the children list of the parent
@@ -318,6 +340,7 @@ int clone(void *stack)
 	new_task->cwd = current_task->cwd;
 	new_task->argv = current_task->argv;
 	new_task->procfs_node = procfs_node;
+	new_task->buffers = current_task->buffers;
 	new_task->main_thread = current_task->main_thread;
 	new_task->parent = current_task->main_thread;
 	new_task->threads = current_task->threads;

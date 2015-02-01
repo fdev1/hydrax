@@ -28,7 +28,7 @@
 #	if defined(NDEBUG)
 #		define assert(expr)			(void) 0
 #	else
-#		define assert(expr)			exit(-1)
+#		define assert(expr)			if (unlikely(!(expr))) exit(-1)
 #	endif
 #endif
 

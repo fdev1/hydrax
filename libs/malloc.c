@@ -2,12 +2,12 @@
 #include <malloc.h>
 #include <bget/bget.h>
 
-char heap_mem[1024 * 1024];
+unsigned char heap_mem[1024 * 8];
 
 
 void malloc_init(void)
 {
-	bpool(heap_mem, 1024 * 1024);
+	bpool(heap_mem, 1024 * 8);
 }
 
 

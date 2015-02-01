@@ -92,17 +92,6 @@
 
 
 /*
- * Structure used to track allocated pages.
- */
-typedef struct buffer
-{
-	intptr_t address;
-	uint32_t pages;
-	struct buffer *next;
-}
-buffer_t;
-
-/*
  * imports
  */
 extern uint32_t end;    /* defined by linker */
@@ -115,10 +104,10 @@ static __attribute__((aligned(0x1000))) page_directory_t kernel_directory;
 static memmap_t physical_memmap;
 static memmap_t kernel_memmap;
 static memmap_t default_memmap;
-static buffer_t *buffers = NULL;
 static uint32_t placement_address = (uint32_t) &end;
 static uint32_t *frame_refs;
 static mutex_t frame_refs_lock = MUTEX_INITIALIZER;
+static buffer_t *kernel_buffers = NULL;
 
 /*
  * Globals
@@ -141,8 +130,10 @@ memmap_t *mmu_get_physical_map(void)
 
 /*
  * Free physical page.
+ * NOTE: We're temporarily using this function
+ * from elfldr so don't uncomment the static.
  */
-static void mmu_frame_free(page_t *page)
+/*static*/ void mmu_frame_free(page_t *page)
 {
 	assert(page->frame != 0x0);
 	mutex_busywait(&physical_memmap.lock);
@@ -267,6 +258,7 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	page_directory_t *dir;
 	memmap_t *memmap;
 	intptr_t tmp_vaddr;
+	buffer_t **buffers;
 	
 	if (phys == NULL)
 		phys = &physmem;
@@ -293,11 +285,13 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	{
 		memmap = &kernel_memmap;
 		dir = &kernel_directory;
+		buffers = &kernel_buffers;
 	}
 	else
 	{
 		memmap = current_memmap;
 		dir = current_directory;
+		buffers = &current_task->buffers;
 	}
 	
 	/*
@@ -371,27 +365,16 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 
 	if ((flags & KALLOC_OPTN_NOFREE) == 0 && kheap.len)
 	{
-		/*
-		 * TODO: We need to use something other than the heap
-		 * for this
-		 */
+		buffer_t **tmp;
 		buffer_t *buf = (buffer_t*) malloc(sizeof(buffer_t));
 		assert(buf != NULL);
 		buf->address = vaddr;
-		buf->pages = sz / 0x1000;
+		buf->pages = (sz + 0xFFF) / 0x1000;
 		buf->next = NULL;
 
-		if (buffers == NULL)
-		{
-			buffers = buf;
-		}
-		else
-		{
-			buffer_t *tmp = buffers;
-			while (tmp->next != NULL)
-				tmp = tmp->next;
-			tmp->next = buf;
-		}
+		while (*buffers != NULL)
+			buffers = &(*buffers)->next;
+		*buffers = buf;
 	}
 
 	return vaddr;
@@ -405,36 +388,54 @@ void kfree(void* ptr)
 	unsigned int i;
 	intptr_t addr;
 	
-	buffer_t *parent = NULL, *tmp = buffers;
-	while(tmp != NULL && (void*) tmp->address != ptr)
+	buffer_t **tmp, **buf, *parent;
+	tmp = &kernel_buffers;
+	buf = tmp;
+	parent = NULL;
+	while(*tmp != NULL && (*tmp)->address != (intptr_t) ptr)
 	{
-		parent = tmp;
-		tmp = tmp->next;
-	}	
+		parent = *tmp;
+		tmp = &(*tmp)->next;
+	}
+	
+	if (*tmp == NULL)
+	{
+		assert(current_task != NULL);
+		tmp = &current_task->buffers;
+		buf = tmp;
+		parent = NULL;
+		while(*tmp != NULL && (void*) (*tmp)->address != ptr)
+		{
+			parent = *tmp;
+			tmp = &(*tmp)->next;
+		}
+	}
 
-	assert(parent != NULL);	/* this is not necessarily always true but in
-							reality the first buffer allocated will never be freed */
-							
-	if (tmp == NULL)
+	if (*tmp == NULL)
 		asm("nop");
-	assert(tmp != NULL);
+	
+	assert(*tmp != NULL);
 
-	addr = (intptr_t) tmp->address;
-	for (i = 0; i < tmp->pages; i++)
+	addr = (intptr_t) (*tmp)->address;
+	for (i = 0; i < (*tmp)->pages; i++)
 	{
 		mmu_frame_free(mmu_get_page(addr, 0, current_directory));
 		addr += 0x1000;
 	}
+	
+	
 	if (parent != NULL)
 	{
-		parent->next = tmp->next;
-		free((void*) tmp);
+		buffer_t *tmpbuf;
+		tmpbuf = *tmp;
+		parent->next = (*tmp)->next;
+		free((void*) tmpbuf);
 	}
 	else
 	{
 		/* this can be removed as it'll never happen */
-		buffers = NULL;
-		free((void*) tmp); /* free from heap */
+		buf = NULL;
+		free((void*) *tmp); /* free from heap */
 	}
 }
 

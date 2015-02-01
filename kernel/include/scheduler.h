@@ -64,6 +64,7 @@ typedef struct __task
 	vfs_node_t *cwd;
 	mutex_t env_lock;
 	mutex_t lock;
+	struct __buffer *buffers;
 	struct __descriptor_table *descriptors_info;
 	struct __task *parent;
 	struct __task *main_thread;

@@ -45,6 +45,17 @@
 #define ALLOC_FRAME_KERNEL		(0x01)
 #define ALLOC_FRAME_WRITEABLE		(0x02)
 
+/*
+ * Structure used to track allocated pages.
+ */
+typedef struct __buffer
+{
+	intptr_t address;
+	uint32_t pages;
+	struct __buffer *next;
+}
+buffer_t;
+
 
 
 /*

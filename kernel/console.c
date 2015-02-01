@@ -33,9 +33,9 @@ static bool early_init = false;
  * Read from the console.
  * This just reads from the keyboard driver.
  */
-static int console_read(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t *buf)
+static uint32_t console_read(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t *buf)
 {
-	return vfs_read(node, offset, len, buf);
+	return vfs_read(kbd, offset, len, buf);
 }
 
 /*
@@ -43,7 +43,7 @@ static int console_read(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t
  * This is where we'll be implementing all the 
  * console escape codes.
  */
-static int console_write(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t *buf)
+static uint32_t console_write(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t *buf)
 {
 	int i;
 	i = 0;

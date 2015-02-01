@@ -78,11 +78,18 @@ static inline int create_file_descriptor(vfs_node_t *node, int fd, unsigned int 
 	mutex_wait(&current_task->descriptors_info->lock);
 	desc_table = (desc_info_t*) current_task->descriptors_info;
 	assert(desc_table != NULL);
-	
+
+	#if 1
+	if (likely(fd == -1))
+		f->fd = desc_table->fd_next++;
+	else
+		f->fd = fd;
+	#else
 	if (unlikely(fd >= 0))
 		f->fd = fd;
 	else
 		f->fd = desc_table->fd_next++;
+	#endif
 
 	if (unlikely(desc_table->file_descriptors == NULL))
 	{

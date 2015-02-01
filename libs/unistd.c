@@ -82,7 +82,7 @@ ssyscall1(SYSCALL_CLOSE, int, close, int, fd);
 ssyscall1(SYSCALL_EXIT, int, exit, int, status);
 ssyscall1(SYSCALL_CLONE, int, clone, void*, stack);
 ssyscall1(SYSCALL_DUP, int, dup, int, fd);
-ssyscall1(SYSCALL_PIPE, int, pipe, int, pipefd[2]);
+ssyscall1(SYSCALL_PIPE, int, pipe, int*, pipefd);
 ssyscall2(SYSCALL_DUP2, int, dup2, int, oldfd, int, newfd);
 ssyscall2(SYSCALL_OPEN, int, open, const char*, path, int, flags);
 ssyscall2(SYSCALL_KILL, int, kill, pid_t, pid, int, signum);

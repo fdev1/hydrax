@@ -92,6 +92,7 @@ void exit(int);
 		.finddir = NULL,			\
 		.stat = NULL,				\
 		.ioctl = NULL,				\
+		.chown = NULL,				\
 		.parent = NULL,			\
 		.ptr = NULL,				\
 		.next = NULL				\
@@ -112,6 +113,7 @@ typedef struct dirent * (*readdir_type_t)(struct vfs_node *node, uint32_t index,
 typedef void* (*finddir_type_t)(struct vfs_node *node, char *name);
 typedef struct stat* (*stat_type_t)(struct vfs_node *node, const char *path, struct stat* buf);
 typedef int (*ioctl_type_t)(struct vfs_node *node, unsigned long request, void *last_arg);
+typedef int (*vfs_chown_fn)(struct vfs_node *node, uid_t uid, gid_t gid);
 
 
 /*
@@ -141,6 +143,7 @@ typedef struct vfs_node
 	finddir_type_t finddir;
 	stat_type_t stat;
 	ioctl_type_t ioctl;
+	vfs_chown_fn chown;
 	struct vfs_node *parent;
 	struct vfs_node *ptr;
 	struct vfs_node *next;		/* next sibling */

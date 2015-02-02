@@ -15,12 +15,14 @@ PIPE_OBJ=pipetest.o
 PIPE_EXE=pipetest
 THREAD_OBJ=threadtest.o
 THREAD_EXE=threadtest
+CHOWN_OBJ=chown.o
+CHOWN_EXE=chown
 
 CFLAGS=-m32 -g -nostdlib -nostdinc -fno-builtin -I../libs \
 	-I../kernel/include -fno-stack-protector
 LDFLAGS=-melf_i386
 
-all: init pipe echo thread
+all: init pipe echo thread chown
 
 clean: 
 	rm -f *.o 
@@ -44,6 +46,10 @@ pipe: $(PIPE_OBJ)
 thread: $(THREAD_OBJ)
 	@echo -e "  LD\t\t$(THREAD_EXE)"
 	@$(LD) $(LDFLAGS) -o $(THREAD_EXE) $(THREAD_OBJ) ../libs/libc.a ../libs/libpthread.a
+
+chown: $(CHOWN_OBJ)
+	@echo -e "  LD\t\t$(CHOWN_EXE)"
+	@$(LD) $(LDFLAGS) -o $(CHOWN_EXE) $(CHOWN_OBJ) ../libs/libc.a 
 
 .c.o:
 	@echo -e "  CC\t\t"$<

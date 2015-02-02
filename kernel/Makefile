@@ -82,6 +82,7 @@ kernel: $(SOURCES)
 		../tools/mkinitrd/hello.txt /home/hello.txt \
 		../utils/init /sbin/init \
 		../utils/echo /bin/echo \
+		../utils/chown /bin/chown \
 		../utils/pipetest /bin/pipetest \
 		../utils/threadtest /bin/threadtest \
 		../files/inittab /etc/inittab \

@@ -62,6 +62,7 @@ typedef struct __task
 	signal_handler_t sig_handler[32];
 	vfs_node_t *procfs_node;
 	vfs_node_t *cwd;
+	vfs_node_t *root;
 	mutex_t env_lock;
 	mutex_t lock;
 	struct __buffer *buffers;

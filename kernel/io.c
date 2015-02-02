@@ -304,7 +304,14 @@ int fsync(int fd)
  */
 int chown(const char *path, uid_t uid, gid_t gid)
 {
-	return ENOSYS;
+	vfs_node_t *node;
+	node = vfs_open(path, NULL);
+	if (node == NULL)
+		return ENOENT;
+	node->uid = uid;
+	node->gid = gid;
+	vfs_close(node);
+	return ESUCCESS;
 }
 
 /*
@@ -312,7 +319,14 @@ int chown(const char *path, uid_t uid, gid_t gid)
  */
 int chroot(const char *path)
 {
-	return ENOSYS;
+	vfs_node_t *node;
+	node = vfs_open(path, NULL);
+	if (node == NULL)
+		return ENOENT;
+	if (current_task->root != NULL)
+		vfs_close(current_task->root);
+	current_task->root = node;
+	return ESUCCESS;
 }
 
 int kfcntl(int fd, int cmd, void *args)

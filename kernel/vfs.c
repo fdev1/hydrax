@@ -617,3 +617,23 @@ int vfs_ioctl(vfs_node_t *node, unsigned int request, void *last_arg)
 	return ENOENT;
 }
 
+/*
+ * Change file owner
+ * TODO: We might want to add a path argument to this
+ * function so that we don't need to call vfs_open()
+ * from chown().
+ */
+int vfs_chown(vfs_node_t *node, uid_t uid, gid_t gid)
+{
+	assert(node != NULL);
+	if (node->chown != NULL)
+	{
+		return node->chown(node, uid, gid);
+	}
+	else
+	{
+		node->uid = uid;
+		node->gid = gid;
+		return ESUCCESS;
+	}
+}

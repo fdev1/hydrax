@@ -55,7 +55,7 @@ typedef struct dirent * (*vfs_readdir_fn_t)(struct vfs_node *node, uint32_t inde
 typedef void* (*vfs_finddir_fn_t)(struct vfs_node *node, char *name);
 typedef struct stat* (*vfs_stat_fn_t)(struct vfs_node *node, const char *path, struct stat* buf);
 typedef int (*vfs_ioctl_fn_t)(struct vfs_node *node, unsigned int request, void *last_arg);
-
+typedef int (*vfs_chown_fn)(struct vfs_node *node, uid_t uid, gid_t gid);
 
 /*
  * vfs node structure
@@ -84,6 +84,7 @@ typedef struct vfs_node
 	vfs_finddir_fn_t finddir;
 	vfs_stat_fn_t stat;
 	vfs_ioctl_fn_t ioctl;
+	vfs_chown_fn chown;
 	struct vfs_node *parent;
 	struct vfs_node *ptr;
 	struct vfs_node *next;		/* next sibling */
@@ -130,6 +131,7 @@ pipe_t;
 		.finddir = NULL,			\
 		.stat = NULL,				\
 		.ioctl = NULL,				\
+		.chown = NULL,				\
 		.parent = NULL,			\
 		.ptr = NULL,				\
 		.next = NULL				\
@@ -210,6 +212,11 @@ int vfs_ioctl(vfs_node_t *node, unsigned int request, void *last_arg);
  * Closes a node.
  */
 void vfs_close(vfs_node_t *node);
+
+/*
+ * Change file owner
+ */
+int vfs_chown(vfs_node_t *node, uid_t uid, gid_t gid);
 
 #endif
 

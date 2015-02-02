@@ -101,6 +101,7 @@ void scheduler_init(void)
 	idle_task.lock = MUTEX_INITIALIZER;
 	idle_task.env_lock = MUTEX_INITIALIZER;
 	idle_task.cwd = NULL;
+	idle_task.root = NULL;
 	idle_task.argv = NULL;
 	idle_task.envp = NULL;
 	idle_task.buffers = NULL;

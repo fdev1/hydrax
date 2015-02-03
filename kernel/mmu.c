@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <mutex.h>
 #include <scheduler.h>
+#include <errno.h>
 
 #define MMU_PAGE_SIZE			(0x1000)
 #define MMU_CR0_PG				(0x0000)
@@ -891,4 +892,17 @@ void mmu_destroy_directory(page_directory_t *directory)
 void mmu_purge_directory(page_directory_t *directory)
 {
 	assert(0);
+}
+
+/*
+ * 
+ */
+int brk(void *addr)
+{
+	return ENOSYS;
+}
+
+int sbrk(intptr_t inc)
+{
+	return ENOSYS;
 }

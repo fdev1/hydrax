@@ -248,6 +248,36 @@ pid_t wait(int *status);
  */
 ssize_t readlink(const char *path, char *buf, size_t bufsize);
 
+/*
+ * Unlink a file.
+ */
+int unlink(const char *path);
+
+/*
+ * Change data segment size
+ */
+int brk(void *addr);
+
+/*
+ * Change data segment size
+ */
+int sbrk(intptr_t inc);
+
+/*
+ * Reposition read/write file offset
+ */
+off_t lseek(int fd, off_t offset, int whence);
+
+/*
+ * Create new name for file.
+ */
+int link(const char *oldpath, const char *newpath);
+
+/*
+ * Returns 1 if the file descriptor is a tty,
+ * zero otherwise.
+ */
+int isatty(int fd);
 
 #endif
 

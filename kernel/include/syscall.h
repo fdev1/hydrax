@@ -65,8 +65,13 @@
 #define SYSCALL_GETHOSTNAME		(41)
 #define SYSCALL_WAIT			(42)
 #define SYSCALL_READLINK			(43)
+#define SYSCALL_UNLINK			(44)
+#define SYSCALL_BRK				(45)
+#define SYSCALL_LSEEK			(46)
+#define SYSCALL_LINK			(47)
+#define SYSCALL_ISATTY			(48)
 
-#define SYSCALL_COUNT			(44)
+#define SYSCALL_COUNT			(49)
 
 /*
  * initialize system call interface

@@ -299,6 +299,36 @@ int fsync(int fd)
 	return sync();
 }
 
+int unlink(const char *path)
+{
+	return ENOSYS;
+}
+
+/*
+ * Reposition read/write file offset
+ */
+off_t lseek(int fd, off_t offset, int whence)
+{
+	return ENOSYS;
+}
+
+/*
+ * Create new name for file.
+ */
+int link(const char *oldpath, const char *newpath)
+{
+	return ENOSYS;
+}
+
+/*
+ * Returns 1 if the file descriptor is a tty,
+ * zero otherwise.
+ */
+int isatty(int fd)
+{
+	return 0;
+}
+
 /*
  * Change the owner of a file
  */

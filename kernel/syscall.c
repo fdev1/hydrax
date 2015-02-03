@@ -92,7 +92,12 @@ static syscall_t syscalls[] =
 	{ &sethostname, 2 },
 	{ &gethostname, 2 },
 	{ &wait, 1 },
-	{ &readlink, 3 }
+	{ &readlink, 3 },
+	{ &unlink, 1 },
+	{ &brk, 1 },
+	{ &lseek, 3 },
+	{ &link, 2 },
+	{ &isatty, 1 },
 };
 
 /*

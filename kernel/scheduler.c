@@ -119,7 +119,7 @@ void scheduler_init(void)
 	arch_set_memmap(idle_task.machine_state, current_memmap);
 
 	for (i = 0; i < 32; i++)
-		idle_task.sig_handler[i] = NULL;
+		idle_task.sig_handler[i] = SIG_DFL;
 
 	current_task = &idle_task;
 	schedule();
@@ -454,7 +454,7 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	 * disposition
 	 */
 	for (i = 0; i < 32; i++)
-		current_task->sig_handler[i] = NULL;
+		current_task->sig_handler[i] = SIG_DFL;
 
 	/* free previously allocated args */
 	if (current_task->argv != NULL)
@@ -654,7 +654,7 @@ int raise(int signal)
 /*
  * Puts the current task to sleep
  */
-void wait_signal(void)
+void pause(void)
 {
 	assert(current_task != NULL);
 	assert(current_task != &idle_task);
@@ -732,15 +732,17 @@ int waitid(pid_t id, int type)
 	return ENOSYS;
 }
 
+/*
+ * Wait for a child process to exit.
+ */
 pid_t wait(int *status)
 {
 	task_t *tmp;
-	
 	assert(tasks != NULL);
-	
-	//tmp = pr
-	
-	return ENOSYS;
+	tmp = current_task->children;
+	while (tmp != NULL && tmp->status != TASK_STATE_ZOMBIE)
+		tmp = tmp->next_child;
+	return free_task_entry(tmp);
 }
 
 /*
@@ -755,7 +757,7 @@ int waitpid(pid_t pid, int *status, int options)
 		return wait(status);
 	
 	/* find the task entry in the task list */
-	mutex_busywait(&schedule_lock);
+	mutex_wait(&schedule_lock);
 	tmp = tasks;
 	while (tmp != NULL)
 	{
@@ -770,8 +772,8 @@ int waitpid(pid_t pid, int *status, int options)
 
 	while (tmp != NULL && tmp->status != TASK_STATE_ZOMBIE)
 	{
-		wait_signal();
-		mutex_busywait(&schedule_lock);
+		pause();
+		mutex_wait(&schedule_lock);
 		if (unlikely(tasks == NULL))
 		{
 			mutex_release(&schedule_lock);

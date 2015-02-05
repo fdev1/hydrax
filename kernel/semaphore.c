@@ -186,7 +186,7 @@ void semaphore_waitsleep(semaphore_t *s)
 		mutex_release((mutex_t*) &s->enter);
 		mutex_attach_waiter(&s->waiters, &s->waiters_lock, &waiter);
 		while (waiter.waiting)		
-			wait_signal();
+			pause();
 		mutex_detach_waiter(&s->waiters, &s->waiters_lock, &waiter);
 	}
 }
@@ -210,7 +210,7 @@ void semaphore_waitsleep_excl(semaphore_t *s)
 		mutex_release((mutex_t*) &s->enter);
 		mutex_attach_waiter(&s->waiters, &s->waiters_lock, &waiter);
 		while (waiter.waiting)		
-			wait_signal();
+			pause();
 		mutex_detach_waiter(&s->waiters, &s->waiters_lock, &waiter);
 	}
 }
@@ -231,7 +231,7 @@ void semaphore_signal_sleep(semaphore_t *s)
 			if (likely(s->waiters != NULL))
 			{
 				s->waiters->waiting = 0;
-				killtask(s->waiters->pid, 30);
+				killtask(s->waiters->pid, SIGCONT);
 			}
 			mutex_release((mutex_t*) &s->enter);
 			return;

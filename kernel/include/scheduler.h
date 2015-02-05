@@ -105,11 +105,6 @@ void schedule(void);
 int killall(int signum);
 
 /*
- * wait for a signal
- */
-void wait_signal(void);
-
-/*
  * gets the count of running tasks
  */
 unsigned int gettaskcount(void);

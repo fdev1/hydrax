@@ -18,6 +18,11 @@
 #include <printk.h>
 #include <scheduler.h>
 
+static void arch_core_dump(void)
+{
+	return;
+}
+
 /*
  * This is the default signal handler. It gets executed
  * in kernel mode when a signal is received. From here we must
@@ -52,63 +57,91 @@ void signal_handler(int sigmask)
 			signum++;
 		}
 		
-		/*
-		 * TODO: For now we just call the signal handler
-		 * directly so it runs in kernel mode.
-		 */
-		if (current_task->sig_handler[signum] != NULL)
+		switch ((unsigned int) current_task->sig_handler[signum])
 		{
-			current_task->sig_handler[signum](signum);
-			continue;
-		}
+			case (unsigned int) SIG_DFL:
 
-		/*
-		 * If the signal has no handler perform the
-		 * default action
-		 */
-		switch (signum)
-		{
-			case SIGILL:
-				printk(7, "SIGILL received by pid %i tid %i", getpid(), gettid());
-				arch_dump_stack_trace();
-				exit(-1);
-				break;
-
-			case SIGSEGV:
-				printk(7, "SIGSEGV received by pid %i tid %i", getpid(), gettid());
-				exit(-1);
-				break;
-				
-			case SIGSTOP:
-				current_task->status = TASK_STATE_WAITING;
-				schedule();
-				break;
-				
-			case SIGCONT:
-				current_task->status = TASK_STATE_RUNNING;
-				schedule();
-				break;
-				
-			case SIGQUIT:
-			case SIGTERM:
-			case SIGKILL:
-				printk(7, "SIGKILL received by pid %i tid %i", getpid(), gettid());
-				exit(-1);
-				break;
-							
-			case SIGINT:
-				printk(7, "SIGINT received by pid %i", getpid());
-				break;
-
-			case SIGALRM:
-			case SIGCHLD:
-				break;
-
-			default:
-				if (signum != 30)
+				/*
+				* If the signal has no handler perform the
+				* default action
+				*/
+				switch (signum)
 				{
-					printk(7, "pid %i received signal %i", getpid(), signum);
+					/*
+					* A - Abnormal termination and possibly core dump
+					*/
+					case SIGABRT:
+					case SIGBUS:
+					case SIGFPE:
+					case SIGILL:
+					case SIGQUIT:
+					case SIGSEGV:
+					case SIGSYS:
+					case SIGTRAP:
+					case SIGXCPU:
+					case SIGXFSZ:
+						arch_core_dump();
+					/*
+					* T - Abnormal Termination
+					*/
+					case SIGALRM:
+					case SIGHUP:
+					case SIGINT:
+					case SIGKILL:
+					case SIGPIPE:
+					case SIGTERM:
+					case SIGUSR1:
+					case SIGUSR2:
+					case SIGPOLL:
+					case SIGPROF:
+					case SIGVTALRM:
+						exit(-1);
+						break;
+
+					/*
+					* S - Stop the process
+					*/
+					case SIGSTOP:
+					case SIGTSTP:
+					case SIGTTIN:
+					case SIGTTOU:
+						current_task->status = TASK_STATE_WAITING;
+						schedule();
+						break;
+						
+					/*
+					* C - Continue the process
+					*/
+					case SIGCONT:
+						current_task->status = TASK_STATE_RUNNING;
+						schedule();
+						break;
+						
+					/*
+					* I - Ignore the signal
+					*/
+					case SIGCHLD:
+					case SIGURG:
+						break;
 				}
+				break;
+			case (unsigned int) SIG_IGN:
+				break;
+			case (unsigned int) SIG_ERR:
+				assert(current_task->sig_handler[signum] != SIG_ERR);
+				break;
+			case (unsigned int) SIG_HOLD:
+				assert(current_task->sig_handler[signum] != SIG_HOLD);
+				break;
+
+			/*
+			 * TODO: For now we just call the signal handler
+			 * directly so it runs in kernel mode.
+			 */
+			default:
+				current_task->sig_handler[signum](signum);
+				break;
+				
 		}
 	}
 }

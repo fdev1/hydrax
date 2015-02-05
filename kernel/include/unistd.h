@@ -279,5 +279,11 @@ int link(const char *oldpath, const char *newpath);
  */
 int isatty(int fd);
 
+/*
+ * wait for a signal
+ */
+void pause(void);
+
+
 #endif
 

@@ -31,7 +31,7 @@ void mutex_waitsleep(mutex_t *s)
 		mutex_waiter_t waiter;
 		mutex_attach_waiter(&s->waiters, &s->waiters_lock, &waiter);
 		while (waiter.waiting)
-			wait_signal();
+			pause();
 		mutex_detach_waiter(&s->waiters, &s->waiters_lock, &waiter);
 		arch_exchange_rm(i, s->s);
 	}
@@ -48,7 +48,7 @@ void mutex_releasesleep(mutex_t *m)
 	if (likely(m->waiters != NULL))
 	{
 		m->waiters->waiting = 0;
-		killtask(m->waiters->pid, 30);
+		killtask(m->waiters->pid, SIGCONT);
 	}
 }
 

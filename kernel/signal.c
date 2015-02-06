@@ -36,20 +36,21 @@ void signal_handler(int sigmask)
 	
 	sigmask = 0;
 	
-	while (current_task->signal)
+	while (current_task->sig_pending)
 	{
 		/*
-		* if there is a signal pending handle it
-		*/
+		 * if there is a signal pending handle it
+		 */
 		signum = 0;
-		if (likely(current_task->signal))
+		if (likely(current_task->sig_pending))
 		{
-			sigtmp = current_task->signal;
+			sigtmp = current_task->sig_pending & ~current_task->sigmask;
 			while (1)
 			{
 				if (unlikely(sigtmp & 1))
 				{
-					current_task->signal &= ~(1 << signum);
+					current_task->sig_pending &= ~(1 << signum);
+					current_task->sig_delivered |= (1 << signum);
 					break;
 				}
 				sigtmp >>= 1;
@@ -58,19 +59,19 @@ void signal_handler(int sigmask)
 			signum++;
 		}
 		
-		switch ((unsigned int) current_task->sig_handler[signum])
+		switch ((unsigned int) current_task->sig_handler[signum - 1])
 		{
 			case (unsigned int) SIG_DFL:
 
 				/*
-				* If the signal has no handler perform the
-				* default action
-				*/
+				 * If the signal has no handler perform the
+				 * default action
+				 */
 				switch (signum)
 				{
 					/*
-					* A - Abnormal termination and possibly core dump
-					*/
+					 * A - Abnormal termination and possibly core dump
+					 */
 					case SIGABRT:
 					case SIGBUS:
 					case SIGFPE:
@@ -83,8 +84,8 @@ void signal_handler(int sigmask)
 					case SIGXFSZ:
 						arch_core_dump();
 					/*
-					* T - Abnormal Termination
-					*/
+					 * T - Abnormal Termination
+					 */
 					case SIGALRM:
 					case SIGHUP:
 					case SIGINT:
@@ -100,8 +101,8 @@ void signal_handler(int sigmask)
 						break;
 
 					/*
-					* S - Stop the process
-					*/
+					 * S - Stop the process
+					 */
 					case SIGSTOP:
 					case SIGTSTP:
 					case SIGTTIN:
@@ -111,16 +112,16 @@ void signal_handler(int sigmask)
 						break;
 						
 					/*
-					* C - Continue the process
-					*/
+					 * C - Continue the process
+					 */
 					case SIGCONT:
 						current_task->status = TASK_STATE_RUNNING;
 						schedule();
 						break;
 						
 					/*
-					* I - Ignore the signal
-					*/
+					 * I - Ignore the signal
+					 */
 					case SIGCHLD:
 					case SIGURG:
 						break;
@@ -214,4 +215,16 @@ int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 		default:
 			return EINVAL;
 	}
+}
+
+/*
+ * Returns the set of signals that are pending for delivery
+ * to the current thread.
+ */
+int sigpending(sigset_t *set)
+{
+	if (set == NULL)
+		return EFAULT;
+	*set = current_task->sig_pending;
+	return ESUCCESS;
 }

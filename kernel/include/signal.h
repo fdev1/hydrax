@@ -257,6 +257,11 @@ int siginterrupt(int, int);
 int sigismember(const sigset_t *, int);
 /* void (*signal(int, void (*)(int)))(int); */
 int sigpause(int);
+
+/*
+ * Returns the set of signals that are pending for delivery
+ * to the current thread.
+ */
 int sigpending(sigset_t *);
 
 /*

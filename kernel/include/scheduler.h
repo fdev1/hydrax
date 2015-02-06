@@ -55,11 +55,12 @@ typedef struct __task
 	gid_t saved_gid;
 	int32_t errno;
 	unsigned int status;
-	uint32_t signal;
 	int exit_code;
 	char **argv;
 	char **envp;
-	uint32_t sigmask;
+	sigset_t sigmask;
+	sigset_t sig_pending;
+	sigset_t sig_delivered;
 	signal_handler_t sig_handler[32];
 	vfs_node_t *procfs_node;
 	vfs_node_t *cwd;

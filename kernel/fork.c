@@ -207,7 +207,9 @@ int fork(void)
 	new_task->argv = NULL;
 	new_task->envp = NULL;
 	new_task->status = TASK_STATE_RUNNING;
-	new_task->signal = 0;
+	new_task->sigmask = current_task->sigmask;
+	new_task->sig_pending = 0;
+	new_task->sig_delivered = 0;
 	new_task->exit_code = 0;
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->descriptors_info = descriptors;
@@ -330,7 +332,9 @@ int clone(void *stack)
 	new_task->argv = current_task->argv;
 	new_task->envp = current_task->envp;
 	new_task->status = TASK_STATE_RUNNING;
-	new_task->signal = 0;
+	new_task->sigmask = current_task->sigmask;
+	new_task->sig_pending = 0;
+	new_task->sig_delivered = 0;
 	new_task->exit_code = 0;
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->env_lock = MUTEX_INITIALIZER;

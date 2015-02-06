@@ -224,8 +224,17 @@ static size_t pipe_write(vfs_node_t* node, uint32_t offset, uint32_t len, uint8_
 {
 	pipe_t *pipe;
 	uint32_t c;
-	
+
+	assert(node != NULL);
 	assert(node->data != NULL);
+	
+	/*
+	 * If the other end of the pipe has been closed
+	 * raise the SIGPIPE signal
+	 */
+	if (node->refs < 2)
+		raise(SIGPIPE);
+	
 	pipe = (pipe_t*) node->data;
 	c = 0;
 	

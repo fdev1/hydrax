@@ -87,7 +87,6 @@ void scheduler_init(void)
 
 	idle_task.id = 0;
 	idle_task.pid = 0;
-	idle_task.signal = 0;
 	idle_task.uid = 0;
 	idle_task.gid = 0;
 	idle_task.euid = 0;
@@ -106,6 +105,8 @@ void scheduler_init(void)
 	idle_task.envp = NULL;
 	idle_task.buffers = NULL;
 	idle_task.sigmask = 0;
+	idle_task.sig_pending = 0;
+	idle_task.sig_delivered = 0;
 	idle_task.procfs_node = NULL;
 	idle_task.parent = NULL;
 	idle_task.next_thread = NULL;
@@ -205,7 +206,7 @@ void schedule_prelocked(void)
 		}
 
 		/* wake up the task if it has a signal */
-		if (unlikely(tmp->signal != 0 && tmp->status == TASK_STATE_WAITING))
+		if (unlikely(tmp->sig_pending != 0 && tmp->status == TASK_STATE_WAITING))
 			tmp->status = TASK_STATE_RUNNING;
 	
 		if (tmp == current_task && 
@@ -217,16 +218,16 @@ void schedule_prelocked(void)
 		tmp = tmp->next;
 	}
 	
-	assert(tmp != &idle_task || tmp->signal == 0);
+	assert(tmp != &idle_task || tmp->sig_pending == 0);
 	assert(arch_get_kernel_stack(tmp->machine_state) != NULL || tmp == &idle_task);
 
 	/*
 	 * switch to the new task
 	 */
-	if (likely(tmp->signal == 0))
+	if (likely(tmp->sig_pending == 0))
 		arch_scheduler_load_task_state(tmp);
 	else
-		arch_scheduler_load_task_state_and_signal(tmp, tmp->signal);
+		arch_scheduler_load_task_state_and_signal(tmp, tmp->sig_pending);
 }
 
 /*
@@ -444,6 +445,8 @@ int execve(const char *path, char *const argv[], char *const envp[])
 		kfree((void*) current_task->buffers->address);
 	
 	current_task->sigmask = 0;
+	current_task->sig_pending = 0;
+	current_task->sig_delivered = 0;
 	
 	vaddr = elf_load(node);
 	if (vaddr == NULL)
@@ -590,7 +593,7 @@ int killtask_nolock(pid_t tid, int signum)
 		tmp = tasks;
 		while (tmp != NULL)
 		{
-			tmp->signal |= (1 << (signum - 1));
+			tmp->sig_pending |= (1 << (signum - 1));
 			tmp = tmp->next;
 		}
 	}
@@ -601,7 +604,7 @@ int killtask_nolock(pid_t tid, int signum)
 			tmp = tmp->next;
 		if (tmp == NULL)
 			return -1;
-		tmp->signal |= (1 << (signum - 1));
+		tmp->sig_pending |= (1 << (signum - 1));
 	}
 	return 0;
 }
@@ -630,7 +633,7 @@ int kill_nolock(pid_t pid, int signum)
 		while (tmp != NULL)
 		{
 			if (tmp->pid == pid && tmp->main_thread == tmp)
-				tmp->signal |= (1 << (signum - 1));
+				tmp->sig_pending |= (1 << (signum - 1));
 			tmp = tmp->next;
 		}
 	}
@@ -641,7 +644,7 @@ int kill_nolock(pid_t pid, int signum)
 			tmp = tmp->next;
 		if (tmp == NULL)
 			return -1;
-		tmp->signal |= (1 << (signum - 1));
+		tmp->sig_pending |= (1 << (signum - 1));
 	}
 	return 0;
 }

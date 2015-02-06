@@ -22,6 +22,7 @@
 #include <time.h>
 #include <errno.h>
 #include <unistd.h>
+#include <signal.h>
 
 /*
  * test system call
@@ -98,6 +99,11 @@ static syscall_t syscalls[] =
 	{ &lseek, 3 },
 	{ &link, 2 },
 	{ &isatty, 1 },
+	{ &sigset, 2 },
+	{ &sighold, 1 },
+	{ &sigrelse, 1 },
+	{ &sigignore, 1 },
+	{ &sigprocmask, 3 },
 };
 
 /*

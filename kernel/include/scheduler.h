@@ -59,6 +59,7 @@ typedef struct __task
 	int exit_code;
 	char **argv;
 	char **envp;
+	uint32_t sigmask;
 	signal_handler_t sig_handler[32];
 	vfs_node_t *procfs_node;
 	vfs_node_t *cwd;

@@ -70,8 +70,13 @@
 #define SYSCALL_LSEEK			(46)
 #define SYSCALL_LINK			(47)
 #define SYSCALL_ISATTY			(48)
+#define SYSCALL_SIGSET			(49)
+#define SYSCALL_SIGHOLD			(50)
+#define SYSCALL_SIGRELSE			(51)
+#define SYSCALL_SIGIGNORE		(52)
+#define SYSCALL_SIGPROCMASK		(53)
 
-#define SYSCALL_COUNT			(49)
+#define SYSCALL_COUNT			(54)
 
 /*
  * initialize system call interface

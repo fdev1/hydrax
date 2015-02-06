@@ -16,7 +16,7 @@
  */
 
 #if defined(KERNEL_CODE)
-#undef KERNEL_CODE
+#	undef KERNEL_CODE
 #endif
 #define KERNEL_CODE
 

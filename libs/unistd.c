@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <signal.h>
 
 /*
  * System call asm macros
@@ -105,6 +106,11 @@ ssyscall2(SYSCALL_SETHOSTNAME, int, sethostname, const char*, name, size_t, len)
 ssyscall2(SYSCALL_GETHOSTNAME, int, gethostname, char*, name, size_t, len);
 ssyscall1(SYSCALL_WAIT, pid_t, wait, int*, status);
 ssyscall3(SYSCALL_READLINK, ssize_t, readlink, const char*, path, char*, buf, size_t, bufsize);
+ssyscall2(SYSCALL_SIGSET, sighandler_t, sigset, int, sig, sighandler_t, disp);
+ssyscall1(SYSCALL_SIGHOLD, int, sighold, int, sig);
+ssyscall1(SYSCALL_SIGRELSE, int, sigrelse, int, sig);
+ssyscall1(SYSCALL_SIGIGNORE, int, sigignore, int, sig);
+ssyscall3(SYSCALL_SIGPROCMASK, int, sigprocmask, int, how, const sigset_t*, set, sigset_t*, oldset);
 
 int ioctl(int fd, unsigned int request, ...)
 {

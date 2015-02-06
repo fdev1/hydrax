@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <printk.h>
 #include <scheduler.h>
+#include <errno.h>
 
 static void arch_core_dump(void)
 {
@@ -146,3 +147,71 @@ void signal_handler(int sigmask)
 	}
 }
 
+/*
+ * Modifies the disposition of a signal
+ */
+sighandler_t sigset(int sig, sighandler_t disp)
+{
+	sighandler_t old_disp;
+	if (unlikely(sig < 1 || sig > 32))
+		return SIG_ERR;
+	old_disp = current_task->sig_handler[sig];
+	current_task->sig_handler[sig] = disp;
+	return old_disp;
+}
+
+/*
+ * Add a signal to the calling process' signal
+ * mask.
+ */
+int sighold(int sig)
+{
+	if (unlikely(sig < 1 || sig > 32))
+		return -1;
+	current_task->sigmask |= (1 << (sig - 1));
+	return ESUCCESS;
+}
+
+/*
+ * Remove a signal from the calling process' signal
+ * mask.
+ */
+int sigrelse(int sig)
+{
+	if (unlikely(sig < 1 || sig > 32))
+		return -1;
+	current_task->sigmask &= ~(1 << (sig - 1));
+	return ESUCCESS;
+}
+
+/*
+ * Sets the disposition of a signal to SIG_IGN
+ */
+int sigignore(int sig)
+{
+	if (unlikely(sig < 1 || sig > 32))
+		return -1;
+	current_task->sig_handler[sig] = SIG_IGN;
+}
+
+/*
+ * Examine and change blocked signals.
+ */
+int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
+{
+	*oldset = current_task->sigmask;
+	switch (how)
+	{
+		case SIG_BLOCK:
+			current_task->sigmask |= *set;
+			return ESUCCESS;
+		case SIG_UNBLOCK:
+			current_task->sigmask &= ~(*set);
+			return ESUCCESS;
+		case SIG_SETMASK:
+			current_task->sigmask = *set;
+			return ESUCCESS;
+		default:
+			return EINVAL;
+	}
+}

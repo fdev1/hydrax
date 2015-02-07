@@ -105,8 +105,6 @@ void scheduler_init(void)
 	idle_task.envp = NULL;
 	idle_task.buffers = NULL;
 	idle_task.sigmask = 0;
-	idle_task.sig_pending = 0;
-	idle_task.sig_delivered = 0;
 	idle_task.procfs_node = NULL;
 	idle_task.parent = NULL;
 	idle_task.next_thread = NULL;
@@ -114,14 +112,20 @@ void scheduler_init(void)
 	idle_task.children = NULL;
 	idle_task.next_child = NULL;
 	idle_task.next = NULL;
-
+	
+	clear_task_signals(&idle_task);
+	
 	arch_set_kernel_stack(idle_task.machine_state, NULL);
 	arch_set_directory(idle_task.machine_state, current_directory);
 	arch_set_directory_physical(idle_task.machine_state, (uint32_t) current_directory_physical);
 	arch_set_memmap(idle_task.machine_state, current_memmap);
 
 	for (i = 0; i < 32; i++)
-		idle_task.sig_handler[i] = SIG_DFL;
+	{
+		idle_task.sig_action[i].sa_flags = 0;
+		idle_task.sig_action[i].sa_mask = 0;
+		idle_task.sig_action[i].sa_handler = SIG_DFL;
+	}
 
 	current_task = &idle_task;
 	schedule();
@@ -206,7 +210,7 @@ void schedule_prelocked(void)
 		}
 
 		/* wake up the task if it has a signal */
-		if (unlikely(tmp->sig_pending != 0 && tmp->status == TASK_STATE_WAITING))
+		if (unlikely(tmp->sig_pending[0] != 0 && tmp->status == TASK_STATE_WAITING))
 			tmp->status = TASK_STATE_RUNNING;
 	
 		if (tmp == current_task && 
@@ -218,16 +222,16 @@ void schedule_prelocked(void)
 		tmp = tmp->next;
 	}
 	
-	assert(tmp != &idle_task || tmp->sig_pending == 0);
+	assert(tmp != &idle_task || tmp->sig_pending[0] == 0);
 	assert(arch_get_kernel_stack(tmp->machine_state) != NULL || tmp == &idle_task);
 
 	/*
 	 * switch to the new task
 	 */
-	if (likely(tmp->sig_pending == 0))
+	if (likely(tmp->sig_pending[0] == 0))
 		arch_scheduler_load_task_state(tmp);
 	else
-		arch_scheduler_load_task_state_and_signal(tmp, tmp->sig_pending);
+		arch_scheduler_load_task_state_and_signal(tmp, tmp->sig_pending[0]);
 }
 
 /*
@@ -445,8 +449,7 @@ int execve(const char *path, char *const argv[], char *const envp[])
 		kfree((void*) current_task->buffers->address);
 	
 	current_task->sigmask = 0;
-	current_task->sig_pending = 0;
-	current_task->sig_delivered = 0;
+	clear_task_signals(current_task);
 	
 	vaddr = elf_load(node);
 	if (vaddr == NULL)
@@ -460,7 +463,11 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	 * disposition
 	 */
 	for (i = 0; i < 32; i++)
-		current_task->sig_handler[i] = SIG_DFL;
+	{
+		current_task->sig_action[i].sa_flags = 0;
+		current_task->sig_action[i].sa_mask = 0;
+		current_task->sig_action[i].sa_handler = SIG_DFL;
+	}
 
 	/* free previously allocated args */
 	if (current_task->argv != NULL)
@@ -558,116 +565,6 @@ void sleep_ticks(tticks_t ticks)
 	assert(t > ticks); /* TODO: handle overflow */
 	while (timer_getticks() < t)
 		schedule();
-}
-
-/*
- * set a signal handler
- */
-int signal(int signum, void* handler)
-{
-	return -1;
-}
-
-/*
- * 
- */
-int killtask(pid_t pid, int signum)
-{
-	int r;
-	mutex_wait(&schedule_lock);
-	r = killtask_nolock(pid, signum);
-	mutex_release(&schedule_lock);
-	return r;
-}
-
-/*
- * Send a signal to a specific thread.
- * If tid is 0 the signal is sent to allocate
- * threads.
- */
-int killtask_nolock(pid_t tid, int signum)
-{
-	task_t *tmp;
-	if (tid == 0)
-	{
-		tmp = tasks;
-		while (tmp != NULL)
-		{
-			tmp->sig_pending |= (1 << (signum - 1));
-			tmp = tmp->next;
-		}
-	}
-	else
-	{
-		tmp = tasks;
-		while (tmp != NULL && tmp->id != tid)
-			tmp = tmp->next;
-		if (tmp == NULL)
-			return -1;
-		tmp->sig_pending |= (1 << (signum - 1));
-	}
-	return 0;
-}
-
-/*
- * Send a signal to a process
- */
-int kill(pid_t pid, int signum)
-{
-	int r;
-	mutex_wait(&schedule_lock);
-	r = kill_nolock(pid, signum);
-	mutex_release(&schedule_lock);
-	return r;
-}
-
-/*
- * sends a signal to a task
- */
-int kill_nolock(pid_t pid, int signum)
-{
-	task_t *tmp;
-	if (pid == 0)
-	{
-		tmp = tasks;
-		while (tmp != NULL)
-		{
-			if (tmp->pid == pid && tmp->main_thread == tmp)
-				tmp->sig_pending |= (1 << (signum - 1));
-			tmp = tmp->next;
-		}
-	}
-	else
-	{
-		tmp = tasks;
-		while (tmp != NULL && tmp->pid != pid && tmp->main_thread != tmp)
-			tmp = tmp->next;
-		if (tmp == NULL)
-			return -1;
-		tmp->sig_pending |= (1 << (signum - 1));
-	}
-	return 0;
-}
-
-/*
- * raise a signal
- */
-int raise(int signal)
-{
-	return killtask(current_task->id, signal);
-}
-
-/*
- * Puts the current task to sleep
- */
-void pause(void)
-{
-	assert(current_task != NULL);
-	assert(current_task != &idle_task);
-	mutex_busywait(&schedule_lock);
-	current_task->status = TASK_STATE_WAITING;
-	schedule_prelocked();
-	return;
 }
 
 /*

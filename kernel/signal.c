@@ -18,6 +18,74 @@
 #include <printk.h>
 #include <scheduler.h>
 #include <errno.h>
+#include <memory.h>
+
+#define queue_signal(task, sig)							\
+if (sig)												\
+do													\
+{													\
+	const uint32_t sigbit = 1 << (sig - 1);					\
+	if (likely((task->sig_pending[0] & sigbit) == 0))			\
+	{												\
+		task->sig_pending[0] |= sigbit;					\
+		task->sig_info[sig - 1][0].si_value.sival_int = 0;			\
+		task->sig_info[sig - 1][0].si_signo = sig;			\
+		task->sig_info[sig - 1][0].si_uid = current_task->euid;\
+		task->sig_info[sig - 1][0].si_pid = current_task->pid;	\
+		task->sig_info[sig - 1][0].si_errno = 0;			\
+		task->sig_info[sig - 1][0].si_code = SI_USER;		\
+		task->sig_info[sig - 1][0].si_addr = NULL;			\
+		task->sig_info[sig - 1][0].si_band = 0;				\
+		task->sig_info[sig - 1][0].si_errno = 0;			\
+		task->sig_info[sig - 1][0].si_status = 0;			\
+	}												\
+	else if (likely((task->sig_pending[1] & sigbit) == 1))		\
+	{												\
+		task->sig_pending[1] |= sigbit;					\
+		task->sig_info[sig - 1][1].si_value.sival_int = 0;			\
+		task->sig_info[sig - 1][1].si_signo = sig;			\
+		task->sig_info[sig - 1][1].si_uid = current_task->euid;\
+		task->sig_info[sig - 1][1].si_pid = current_task->pid;	\
+		task->sig_info[sig - 1][1].si_errno = 0;			\
+		task->sig_info[sig - 1][1].si_code = SI_USER;		\
+		task->sig_info[sig - 1][1].si_addr = NULL;			\
+		task->sig_info[sig - 1][1].si_band = 0;				\
+		task->sig_info[sig - 1][1].si_errno = 0;			\
+		task->sig_info[sig - 1][1].si_status = 0;			\
+	}												\
+	else if (likely((task->sig_pending[2] & sigbit) == 1))		\
+	{												\
+		task->sig_pending[2] |= sigbit;					\
+		task->sig_info[sig - 1][2].si_value.sival_int = 0;			\
+		task->sig_info[sig - 1][2].si_signo = sig;			\
+		task->sig_info[sig - 1][2].si_uid = current_task->euid;\
+		task->sig_info[sig - 1][2].si_pid = current_task->pid;	\
+		task->sig_info[sig - 1][2].si_errno = 0;			\
+		task->sig_info[sig - 1][2].si_code = SI_USER;		\
+		task->sig_info[sig - 1][2].si_addr = NULL;			\
+		task->sig_info[sig - 1][2].si_band = 0;				\
+		task->sig_info[sig - 1][2].si_errno = 0;			\
+		task->sig_info[sig - 1][2].si_status = 0;			\
+	}												\
+	else if (likely((task->sig_pending[3] & sigbit) == 1))		\
+	{												\
+		task->sig_pending[3] |= sigbit;					\
+		task->sig_info[sig - 1][3].si_value.sival_int = 0;	\
+		task->sig_info[sig - 1][3].si_signo = sig;			\
+		task->sig_info[sig - 1][3].si_uid = current_task->euid;\
+		task->sig_info[sig - 1][3].si_pid = current_task->pid;	\
+		task->sig_info[sig - 1][3].si_errno = 0;			\
+		task->sig_info[sig - 1][3].si_code = SI_USER;		\
+		task->sig_info[sig - 1][3].si_addr = NULL;			\
+		task->sig_info[sig - 1][3].si_band = 0;				\
+		task->sig_info[sig - 1][3].si_errno = 0;			\
+		task->sig_info[sig - 1][3].si_status = 0;			\
+	}												\
+}													\
+while (0)
+		
+
+void schedule_prelocked(void);
 
 static void arch_core_dump(void)
 {
@@ -32,34 +100,54 @@ static void arch_core_dump(void)
  */
 void signal_handler(int sigmask)
 {
-	uint32_t sigtmp, signum;
+	uint32_t sigtmp, sig;
+	siginfo_t siginfo;
 	
 	sigmask = 0;
-	
-	while (current_task->sig_pending)
+	sigtmp = current_task->sig_pending[0] & ~current_task->sigmask;
+	while (sigtmp)
 	{
 		/*
 		 * if there is a signal pending handle it
 		 */
-		signum = 0;
-		if (likely(current_task->sig_pending))
+		sig = 0;
+		while (1)
 		{
-			sigtmp = current_task->sig_pending & ~current_task->sigmask;
-			while (1)
+			if (unlikely(sigtmp & 1))
 			{
-				if (unlikely(sigtmp & 1))
-				{
-					current_task->sig_pending &= ~(1 << signum);
-					current_task->sig_delivered |= (1 << signum);
-					break;
-				}
-				sigtmp >>= 1;
-				signum += 1;
+				const uint32_t sigbit = 1 << sig;
+				
+				if (unlikely(current_task->sig_pending[3] & sigbit))
+					current_task->sig_pending[3] &= ~sigbit;
+				else if (unlikely(current_task->sig_pending[2] & sigbit))
+					current_task->sig_pending[2] &= ~sigbit;
+				else if (unlikely(current_task->sig_pending[1] & sigbit))
+					current_task->sig_pending[1] &= ~sigbit;
+				else if (likely(current_task->sig_pending[0] & sigbit))
+					current_task->sig_pending[0] &= ~sigbit;
+				
+				siginfo = current_task->sig_info[sig][0];
+				current_task->sig_info[sig][0] = current_task->sig_info[sig][1];
+				current_task->sig_info[sig][1] = current_task->sig_info[sig][2];
+				current_task->sig_info[sig][2] = current_task->sig_info[sig][3];
+
+				if (likely((current_task->sig_delivered[0] & sigbit) == 0))
+					current_task->sig_delivered[0] |= sigbit;
+				else if (likely((current_task->sig_delivered[1] & sigbit) == 0))
+					current_task->sig_delivered[1] |= sigbit;
+				else if (likely((current_task->sig_delivered[2] & sigbit) == 0))
+					current_task->sig_delivered[2] |= sigbit;
+				else if (likely((current_task->sig_delivered[3] & sigbit) == 0))
+					current_task->sig_delivered[3] |= sigbit;
+				
+				break;
 			}
-			signum++;
+			sigtmp >>= 1;
+			sig++;
 		}
+		sig++;
 		
-		switch ((unsigned int) current_task->sig_handler[signum - 1])
+		switch ((unsigned int) current_task->sig_action[sig - 1].sa_handler)
 		{
 			case (unsigned int) SIG_DFL:
 
@@ -67,7 +155,7 @@ void signal_handler(int sigmask)
 				 * If the signal has no handler perform the
 				 * default action
 				 */
-				switch (signum)
+				switch (sig)
 				{
 					/*
 					 * A - Abnormal termination and possibly core dump
@@ -130,10 +218,10 @@ void signal_handler(int sigmask)
 			case (unsigned int) SIG_IGN:
 				break;
 			case (unsigned int) SIG_ERR:
-				assert(current_task->sig_handler[signum] != SIG_ERR);
+				assert(current_task->sig_action[sig - 1].sa_handler != SIG_ERR);
 				break;
 			case (unsigned int) SIG_HOLD:
-				assert(current_task->sig_handler[signum] != SIG_HOLD);
+				assert(current_task->sig_action[sig - 1].sa_handler != SIG_HOLD);
 				break;
 
 			/*
@@ -141,10 +229,11 @@ void signal_handler(int sigmask)
 			 * directly so it runs in kernel mode.
 			 */
 			default:
-				current_task->sig_handler[signum](signum);
+				current_task->sig_action[sig - 1].sa_handler(sig);
 				break;
 				
 		}
+		sigtmp = current_task->sig_pending[0] & ~current_task->sigmask;
 	}
 }
 
@@ -156,8 +245,8 @@ sighandler_t sigset(int sig, sighandler_t disp)
 	sighandler_t old_disp;
 	if (unlikely(sig < 1 || sig > 32))
 		return SIG_ERR;
-	old_disp = current_task->sig_handler[sig];
-	current_task->sig_handler[sig] = disp;
+	old_disp = current_task->sig_action[sig - 1].sa_handler;
+	current_task->sig_action[sig - 1].sa_handler = disp;
 	return old_disp;
 }
 
@@ -192,7 +281,10 @@ int sigignore(int sig)
 {
 	if (unlikely(sig < 1 || sig > 32))
 		return -1;
-	current_task->sig_handler[sig] = SIG_IGN;
+	current_task->sig_action[sig - 1].sa_flags = 0;
+	current_task->sig_action[sig - 1].sa_mask = 0;
+	current_task->sig_action[sig - 1].sa_handler = SIG_IGN;
+	return ESUCCESS;
 }
 
 /*
@@ -200,7 +292,8 @@ int sigignore(int sig)
  */
 int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 {
-	*oldset = current_task->sigmask;
+	if (oldset != NULL)
+		*oldset = current_task->sigmask;
 	switch (how)
 	{
 		case SIG_BLOCK:
@@ -223,8 +316,273 @@ int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
  */
 int sigpending(sigset_t *set)
 {
-	if (set == NULL)
+	if (unlikely(set == NULL))
 		return EFAULT;
-	*set = current_task->sig_pending;
+	*set = *current_task->sig_pending;
 	return ESUCCESS;
+}
+
+/*
+ * set a signal handler
+ */
+int signal(int sig, sighandler_t disp)
+{
+	if (unlikely(sig < 1 || sig > 32 || sig == SIGKILL || sig == SIGSTOP))
+		return EINVAL;
+	current_task->sig_action[sig - 1].sa_flags = 0;
+	current_task->sig_action[sig - 1].sa_mask = 0;
+	current_task->sig_action[sig - 1].sa_handler = disp;
+	return ESUCCESS;
+}
+
+/*
+ * Queue a signal and data to a process.
+ */
+int sigqueue(pid_t tid, int sig, const union sigval value)
+{
+	task_t *tmp;
+	const uint32_t sigbit = 1 << (sig - 1);
+
+	if (unlikely(sig < 1 || sig > 32))
+		return EINVAL;
+	tmp = tasks;
+	while (tmp != NULL && tmp->id != tid)
+		tmp = tmp->next;
+	if (unlikely(tmp == NULL))
+		return ESRCH;
+	
+	if (likely((tmp->sig_pending[0] & sigbit) == 0))
+	{
+		tmp->sig_pending[0] |= sigbit;
+		tmp->sig_info[sig - 1][0].si_value = value;
+		tmp->sig_info[sig - 1][0].si_signo = sig;
+		tmp->sig_info[sig - 1][0].si_uid = current_task->euid;
+		tmp->sig_info[sig - 1][0].si_pid = current_task->pid;
+		tmp->sig_info[sig - 1][0].si_errno = 0;
+		tmp->sig_info[sig - 1][0].si_code = SI_QUEUE;
+		tmp->sig_info[sig - 1][0].si_addr = NULL;
+		tmp->sig_info[sig - 1][0].si_band = 0;
+		tmp->sig_info[sig - 1][0].si_errno = 0;
+		tmp->sig_info[sig - 1][0].si_status = 0;
+	}
+	else if (likely((tmp->sig_pending[1] & sigbit) == 0))
+	{
+		tmp->sig_pending[1] |= sigbit;
+		tmp->sig_info[sig - 1][1].si_value = value;
+		tmp->sig_info[sig - 1][1].si_signo = sig;
+		tmp->sig_info[sig - 1][1].si_uid = current_task->euid;
+		tmp->sig_info[sig - 1][1].si_pid = current_task->pid;
+		tmp->sig_info[sig - 1][1].si_errno = 0;
+		tmp->sig_info[sig - 1][1].si_code = SI_QUEUE;
+		tmp->sig_info[sig - 1][1].si_addr = NULL;
+		tmp->sig_info[sig - 1][1].si_band = 0;
+		tmp->sig_info[sig - 1][1].si_errno = 0;
+		tmp->sig_info[sig - 1][1].si_status = 0;
+	}
+	else if (likely((tmp->sig_pending[2] & sigbit) == 0))
+	{
+		tmp->sig_pending[2] |= sigbit;
+		tmp->sig_info[sig - 1][2].si_value = value;
+		tmp->sig_info[sig - 1][2].si_signo = sig;
+		tmp->sig_info[sig - 1][2].si_uid = current_task->euid;
+		tmp->sig_info[sig - 1][2].si_pid = current_task->pid;
+		tmp->sig_info[sig - 1][2].si_errno = 0;
+		tmp->sig_info[sig - 1][2].si_code = SI_QUEUE;
+		tmp->sig_info[sig - 1][2].si_addr = NULL;
+		tmp->sig_info[sig - 1][2].si_band = 0;
+		tmp->sig_info[sig - 1][2].si_errno = 0;
+		tmp->sig_info[sig - 1][2].si_status = 0;
+	}
+	else if (likely((tmp->sig_pending[3] & sigbit) == 0))
+	{
+		tmp->sig_pending[3] |= sigbit;
+		tmp->sig_info[sig - 1][3].si_value = value;
+		tmp->sig_info[sig - 1][3].si_signo = sig;
+		tmp->sig_info[sig - 1][3].si_uid = current_task->euid;
+		tmp->sig_info[sig - 1][3].si_pid = current_task->pid;
+		tmp->sig_info[sig - 1][3].si_errno = 0;
+		tmp->sig_info[sig - 1][3].si_code = SI_QUEUE;
+		tmp->sig_info[sig - 1][3].si_addr = NULL;
+		tmp->sig_info[sig - 1][3].si_band = 0;
+		tmp->sig_info[sig - 1][3].si_errno = 0;
+		tmp->sig_info[sig - 1][3].si_status = 0;
+	}
+	else
+	{
+		return EAGAIN;
+	}
+	schedule();
+	return ESUCCESS;
+}
+
+/*
+ * 
+ */
+int killtask(pid_t pid, int signum)
+{
+	int r;
+	mutex_wait(&schedule_lock);
+	r = killtask_nolock(pid, signum);
+	mutex_release(&schedule_lock);
+	return r;
+}
+
+/*
+ * Send a signal to a specific thread.
+ * If tid is 0 the signal is sent to allocate
+ * threads.
+ */
+int killtask_nolock(pid_t tid, int sig)
+{
+	task_t *tmp;
+	if (tid == 0)
+	{
+		tmp = tasks;
+		while (tmp != NULL)
+		{
+			queue_signal(tmp, sig);
+			tmp = tmp->next;
+		}
+	}
+	else
+	{
+		tmp = tasks;
+		while (tmp != NULL && tmp->id != tid)
+			tmp = tmp->next;
+		if (tmp == NULL)
+			return -1;
+		queue_signal(tmp, sig);
+	}
+	return 0;
+}
+
+/*
+ * Send a signal to a process
+ */
+int kill(pid_t pid, int signum)
+{
+	int r;
+	mutex_wait(&schedule_lock);
+	r = kill_nolock(pid, signum);
+	mutex_release(&schedule_lock);
+	return r;
+}
+
+/*
+ * sends a signal to a task
+ */
+int kill_nolock(pid_t pid, int sig)
+{
+	task_t *tmp;
+	const uint32_t sigbit = 1 << (sig - 1);
+	if (pid == 0)
+	{
+		tmp = tasks;
+		while (tmp != NULL)
+		{
+			if (tmp->pid == pid && tmp->main_thread == tmp)
+				queue_signal(tmp, sig);
+			tmp = tmp->next;
+		}
+	}
+	else
+	{
+		tmp = tasks;
+		while (tmp != NULL && tmp->pid != pid && tmp->main_thread != tmp)
+			tmp = tmp->next;
+		if (tmp == NULL)
+			return -1;
+		queue_signal(tmp, sig);
+	}
+	return 0;
+}
+
+/*
+ * raise a signal
+ */
+int raise(int signal)
+{
+	return killtask(current_task->id, signal);
+}
+
+/*
+ * Puts the current task to sleep
+ */
+void pause(void)
+{
+	assert(current_task != NULL);
+	assert(current_task->id != 0);
+	mutex_busywait(&schedule_lock);
+	current_task->status = TASK_STATE_WAITING;
+	schedule_prelocked();
+	return;
+}
+
+/*
+ * Examine and change signal action.
+ */
+int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
+{
+	if (unlikely(signum < 1 || signum > 32 || signum == SIGKILL || signum == SIGSTOP))
+		return EINVAL;
+	if (oldact == NULL || act == NULL)
+		return EFAULT;
+	*oldact = current_task->sig_action[signum - 1];
+	current_task->sig_action[signum - 1] = *act;
+	return ESUCCESS;
+}
+
+/*
+ * Remove signal from the process signal mask and wait
+ * for a signal.
+ */
+int sigpause(int sig)
+{
+	sigset_t oldmask;
+	oldmask = current_task->sigmask;
+	current_task->sigmask = ~(1 << (sig - 1));
+	pause();
+	current_task->sigmask = oldmask;
+	return ESUCCESS;
+}
+
+/*
+ * Wait for a signal.
+ */
+int sigwait(const sigset_t *set, int *sig)
+{
+	int signum;
+	if (unlikely(set == NULL || sig == NULL))
+		return EFAULT;
+	
+	while (1)
+	{
+		if (current_task->sig_delivered[0] & *set)
+		{
+			uint32_t sigbit;
+			signum = 0;
+			sigbit = 1;
+			while (1)
+			{
+				if (unlikely(sigbit & *set & current_task->sig_delivered[0]))
+				{
+					if (current_task->sig_delivered[3] & sigbit)
+						current_task->sig_delivered[3] &= ~sigbit;
+					else if (current_task->sig_delivered[2] & sigbit)
+						current_task->sig_delivered[2] &= ~sigbit;
+					else if (current_task->sig_delivered[1] & sigbit)
+						current_task->sig_delivered[1] &= ~sigbit;
+					else if (current_task->sig_delivered[0] & sigbit)
+						current_task->sig_delivered[0] &= ~sigbit;
+					signum++;
+					*sig = signum;
+					return signum;
+				}
+				signum++;
+				sigbit <<= 1;
+			}			
+		}
+		pause();	
+	}
+	return -1;
 }

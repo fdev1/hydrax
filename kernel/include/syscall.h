@@ -75,8 +75,13 @@
 #define SYSCALL_SIGRELSE			(51)
 #define SYSCALL_SIGIGNORE		(52)
 #define SYSCALL_SIGPROCMASK		(53)
+#define SYSCALL_SIGNAL			(54)
+#define SYSCALL_SIGACTION		(55)
+#define SYSCALL_SIGPAUSE			(56)
+#define SYSCALL_SIGQUEUE			(57)
+#define SYSCALL_SIGWAIT			(58)
 
-#define SYSCALL_COUNT			(54)
+#define SYSCALL_COUNT			(59)
 
 /*
  * initialize system call interface

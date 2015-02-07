@@ -59,9 +59,10 @@ typedef struct __task
 	char **argv;
 	char **envp;
 	sigset_t sigmask;
-	sigset_t sig_pending;
-	sigset_t sig_delivered;
-	signal_handler_t sig_handler[32];
+	sigset_t sig_pending[4];
+	sigset_t sig_delivered[4];
+	siginfo_t sig_info[32][4];
+	struct sigaction sig_action[32];
 	vfs_node_t *procfs_node;
 	vfs_node_t *cwd;
 	vfs_node_t *root;

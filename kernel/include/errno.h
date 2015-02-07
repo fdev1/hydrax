@@ -31,5 +31,16 @@
 #define EINVAL			(-14)
 #define EINTR			(-15)
 #define EPERM			(-16)
+#define ESRCH			(-17)
+#define EAGAIN			(-18)
+
+#if 0
+#if defined(KERNEL_CODE)
+#	include <scheduler.h>
+#	define set_err_no(errno)		current_task->errno = errno
+#else
+#	define set_err_no(errno)		(void) 0
+#endif
+#endif
 
 #endif

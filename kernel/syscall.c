@@ -104,6 +104,11 @@ static syscall_t syscalls[] =
 	{ &sigrelse, 1 },
 	{ &sigignore, 1 },
 	{ &sigprocmask, 3 },
+	{ &signal, 2 },
+	{ &sigaction, 3},
+	{ &sigpause, 1 },
+	{ &sigqueue, 3 },
+	{ &sigwait, 2 },
 };
 
 /*

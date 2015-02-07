@@ -19,6 +19,7 @@
 #include <arch/arch.h>
 #include <sys/types.h>
 #include <time.h>
+#include <errno.h>
 
 /*
  * signals enumerator
@@ -102,9 +103,6 @@ struct sigaction
 {
 	sigset_t sa_mask;
 	int sa_flags;
-	/*
-	 * These two should be in an union?
-	 */
 	void (*sa_handler)(int);
 	void (*sa_sigaction)(int, siginfo_t*, void*);
 };
@@ -228,19 +226,82 @@ stack_t;
 #include <ucontext.h>
 
 void (*bsd_signal(int, void (*)(int)))(int);
+
+/*
+ * Send a signal to a process
+ */
 int kill(pid_t, int);
+
 int killpg(pid_t, int);
+
 #if 0
 int pthread_kill(pthread_t, int);
 int pthread_sigmask(int, const sigset_t *, sigset_t *); 
 #endif
+
+/*
+ * raise a signal
+ */
 int raise(int);
+
+/*
+ * Examine and change signal action.
+ */
 int sigaction(int, const struct sigaction *, struct sigaction *);
-int sigaddset(sigset_t *, int);
+
+/*
+ * Add signal to signal set.
+ */
+static inline int sigaddset(sigset_t *set, int sig)
+{
+	if (unlikely(sig < 1 || sig > 32))
+		return EINVAL;
+	*set |= 1 << (sig - 1);
+	return ESUCCESS;
+}
+
+/*
+ * Delete signal from signal set.
+ */
+static inline int sigdelset(sigset_t *set, int sig)
+{
+	if (unlikely(sig < 1 || sig > 32))
+		return EINVAL;
+	if (unlikely(set == NULL))
+		return EFAULT;
+	*set &= ~(1 << (sig - 1));
+	return ESUCCESS;
+}
+
+/*
+ * Initialize set as an empty set;
+ */
+static inline int sigemptyset(sigset_t *set)
+{
+	*set = 0;
+	return ESUCCESS;
+}
+
+/*
+ * Initialize a full set.
+ */
+static inline int sigfillset(sigset_t *set)
+{
+	if (set == NULL)
+	{
+		//set_err_no(EFAULT);
+		return -1;
+	}
+	*set = 0xFFFFFFFF;
+	return ESUCCESS;
+}
+
 int sigaltstack(const stack_t *, stack_t *);
-int sigdelset(sigset_t *, int);
-int sigemptyset(sigset_t *);
-int sigfillset(sigset_t *);
+
+/*
+ * set a signal handler
+ */
+int signal(int sig, sighandler_t handler);
 
 /*
  * Add a signal to the calling process' signal
@@ -255,7 +316,11 @@ int sigignore(int);
 
 int siginterrupt(int, int);
 int sigismember(const sigset_t *, int);
-/* void (*signal(int, void (*)(int)))(int); */
+
+/*
+ * Remove signal from the process signal mask and wait
+ * for a signal.
+ */
 int sigpause(int);
 
 /*
@@ -269,6 +334,9 @@ int sigpending(sigset_t *);
  */
 int sigprocmask(int, const sigset_t *, sigset_t *);
 
+/*
+ * Queue a signal and data to a process.
+ */
 int sigqueue(pid_t, int, const union sigval);
 
 /*
@@ -284,8 +352,27 @@ sighandler_t sigset(int, sighandler_t);
 
 int sigsuspend(const sigset_t *);
 int sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *);
+
+/*
+ * Wait for a signal.
+ */
 int sigwait(const sigset_t *, int *);
+
 int sigwaitinfo(const sigset_t *, siginfo_t *);
+
+#define clear_task_signals(task)	\
+do {							\
+	(task)->sig_pending[0] = 0;	\
+	(task)->sig_pending[1] = 0;	\
+	(task)->sig_pending[2] = 0;	\
+	(task)->sig_pending[3] = 0;	\
+	(task)->sig_delivered[0] = 0;	\
+	(task)->sig_delivered[1] = 0;	\
+	(task)->sig_delivered[2] = 0;	\
+	(task)->sig_delivered[3] = 0;	\
+	memset((task)->sig_info, 0, sizeof(siginfo_t) * 4);	\
+}							\
+while (0)
 
 #endif
 

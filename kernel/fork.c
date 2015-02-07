@@ -41,9 +41,14 @@ int kfork(task_t *new_task, page_directory_t *directory,
 	int i;
 	task_t *tmp_task;
 
+	clear_task_signals(new_task);
+	
 	/* set default signal handlers */
 	for (i = 0; i < 32; i++)
-		new_task->sig_handler[i] = current_task->sig_handler[i];
+	{
+		new_task->sig_action[i].sa_handler = 
+			current_task->sig_action[i].sa_handler;
+	}
 
 	/*
 	 * Save task context, move the stack, and save the
@@ -208,8 +213,6 @@ int fork(void)
 	new_task->envp = NULL;
 	new_task->status = TASK_STATE_RUNNING;
 	new_task->sigmask = current_task->sigmask;
-	new_task->sig_pending = 0;
-	new_task->sig_delivered = 0;
 	new_task->exit_code = 0;
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->descriptors_info = descriptors;
@@ -333,8 +336,6 @@ int clone(void *stack)
 	new_task->envp = current_task->envp;
 	new_task->status = TASK_STATE_RUNNING;
 	new_task->sigmask = current_task->sigmask;
-	new_task->sig_pending = 0;
-	new_task->sig_delivered = 0;
 	new_task->exit_code = 0;
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->env_lock = MUTEX_INITIALIZER;
@@ -351,11 +352,6 @@ int clone(void *stack)
 	new_task->next_child = NULL;
 	new_task->children = NULL;
 	
-	#if 0
-	mutex_wait(&current_task->descriptors_info->lock);
-	current_task->descriptors_info->refs++;
-	mutex_release(&current_task->descriptors_info->lock);
-	#endif
 	new_task->descriptors_info = current_task->descriptors_info;
 	
 	/*

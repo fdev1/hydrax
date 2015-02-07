@@ -56,6 +56,7 @@ SOURCES=arch/x86/boot.o \
 	fork.o \
 	env.o \
 	null.o \
+	zero.o \
 	system.o \
 	main.o
 

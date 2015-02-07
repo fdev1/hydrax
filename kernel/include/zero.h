@@ -1,5 +1,5 @@
 /*
- * null.h
+ * zero.h
  * 
  * Author: Fernando Rodriguez
  * Email: frodriguez.developer@outlook.com
@@ -13,9 +13,9 @@
  *
  */
 
-#ifndef __NULL_H__
-#define __NULL_H__
+#ifndef __ZERO_H__
+#define __ZERO_H__
 
-void null_init(void);
+void zero_init(void);
 
 #endif

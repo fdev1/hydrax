@@ -34,6 +34,7 @@
 #include <arch/rtc.h>
 #include <unistd.h>
 #include <null.h>
+#include <zero.h>
 
 uint32_t initial_esp;
 
@@ -57,6 +58,7 @@ int hydrax_init(multiboot_header_t *p_mboot, uint32_t initial_stack)
 	tty_init();
 	symbols_init();
 	null_init();
+	zero_init();
 	scheduler_init();
 	timer_init(50);
 	syscall_init();

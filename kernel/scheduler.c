@@ -30,6 +30,7 @@
 #include <dirent.h>
 #include <io.h>
 #include <errno.h>
+#include <signal.h>
 
 /*
  * debug symbols
@@ -43,7 +44,7 @@
 static task_t idle_task;
 
 int kill_nolock(pid_t pid, int sig);
-int killtask_nolock(pid_t tid, int signum);
+int pthread_kill_nolock(pid_t tid, int signum);
 void free_env(void);
 
 /*
@@ -105,6 +106,7 @@ void scheduler_init(void)
 	idle_task.envp = NULL;
 	idle_task.buffers = NULL;
 	idle_task.sigmask = 0;
+	idle_task.thread_stack = NULL;
 	idle_task.procfs_node = NULL;
 	idle_task.parent = NULL;
 	idle_task.next_thread = NULL;
@@ -301,7 +303,7 @@ int exit(int exit_code)
 	{
 		while (current_task->next_thread != NULL)
 		{
-			killtask(current_task->threads->next_thread->id, SIGKILL);
+			pthread_kill(current_task->threads->next_thread->id, SIGKILL);
 			schedule();
 		}
 	}
@@ -369,7 +371,7 @@ int exit(int exit_code)
 	
 	/* send the SIGCHLD signal to parent */
 	if (likely(current_task->parent != NULL))
-		killtask_nolock(current_task->parent->id, SIGCHLD);
+		pthread_kill_nolock(current_task->parent->id, SIGCHLD);
 
 	/*
 	 * Invoke the schedule. The task should get switched out
@@ -379,6 +381,11 @@ int exit(int exit_code)
 	assert(0);
 	return exit_code;
 }
+
+/*
+ * Exit a thread
+ */
+int pthread_exit(int status_code) __attribute__((weak, alias("exit")));
 
 /*
  * get the pid of the current task

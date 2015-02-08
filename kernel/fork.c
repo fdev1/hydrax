@@ -22,6 +22,8 @@
 #include <kheap.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
+#include <syscall.h>
 
 static pid_t next_pid = 1;
 static pid_t next_tid = 1;
@@ -381,4 +383,52 @@ int clone(void *stack)
 	if (ret != 0)
 		arch_set_user_stack(tmp);
 	return ret;
+}
+
+#define INITIAL_STACK_SIZE	(1024)
+
+/*
+ * If a new thread exits it'll return to this
+ * function. It calls the pthread_exit system call
+ * from userland.
+ */
+int __usermode pthread_uexit(void)
+{
+	asm __volatile__(			\
+		"int $0x30;" : : "a" (SYSCALL_PTHREAD_EXIT), "b" (-1));
+	return -1;
+}
+
+/*
+ * TODO: We need to track and free stack.
+ * Also look into using the old stack virtual space (with COW).
+ * I'm not sure if it's possible as the old stack may need
+ * to be shared.
+ */
+int pthread_create(pthread_t *thread, 
+	const pthread_attr_t *attr, pthread_start_fn start_routine, void *arg)
+{
+	pid_t pid;	
+	unsigned int *stack, *pstack;
+	
+	stack = (unsigned int*) malloc(INITIAL_STACK_SIZE * sizeof(unsigned int));
+	if (stack == NULL)
+		return ENOMEM;
+	
+	pid = clone(&stack[INITIAL_STACK_SIZE - 1]);
+	if (pid < 0)
+		return -1;
+	
+	if (pid == 0)
+	{
+		pstack = (uint32_t*) current_task->registers->useresp;
+		
+		*pstack-- = (uint32_t) pstack;
+		*pstack-- = (uint32_t) arg;
+		*pstack-- = (uint32_t) &pthread_uexit;
+		
+		current_task->registers->useresp = (uint32_t) pstack;
+		current_task->registers->eip = (uint32_t) start_routine;
+	}
+	return *thread = pid;
 }

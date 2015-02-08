@@ -48,7 +48,7 @@ void mutex_releasesleep(mutex_t *m)
 	if (likely(m->waiters != NULL))
 	{
 		m->waiters->waiting = 0;
-		killtask(m->waiters->pid, SIGCONT);
+		pthread_kill(m->waiters->pid, SIGCONT);
 	}
 }
 

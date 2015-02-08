@@ -30,5 +30,5 @@ int pthread_create(pthread_t *thread,
 		start_routine(arg);
 		exit(0);
 	}
-	return thread->id = pid;
+	return *thread = pid;
 }

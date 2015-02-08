@@ -17,4 +17,7 @@ typedef uint32_t off_t;
 typedef uint32_t blksize_t;
 typedef uint32_t blkcnt_t;
 
+typedef pid_t pthread_t;
+
+
 #endif

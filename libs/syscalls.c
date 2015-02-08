@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <signal.h>
+#include <pthread.h>
 
 /*
  * System call asm macros
@@ -23,7 +24,7 @@
 		"int $0x30;" : : "a" (num), "b" (argb), "c" (argc), "d" (argd))
 #define syscall4(num, argb, argc, argd, arge)	\
 	asm __volatile__(			\
-		"int $0x30;" : : "a" (num), "b" (argb), "c" (argc), "d" (argd), "e" (arge))
+		"int $0x30;" : : "a" (num), "b" (argb), "c" (argc), "d" (argd), "S" (arge))
 		
 		
 #define ssyscall0(num, rettype, name)		\
@@ -60,7 +61,7 @@ rettype __##name(arg1type arg1, arg2type arg2, arg3type arg3, arg4type arg4)				
 {																\
 	syscall4(num, arg1, arg2, arg3, arg4);									\
 }																\
-rettype name(arg1type arg1, arg2type arg2, arg3type arg3, arg4type, arg4)					\
+rettype name(arg1type arg1, arg2type arg2, arg3type arg3, arg4type arg4)					\
 	__attribute__((weak, alias("__" #name)))
 
 
@@ -116,6 +117,9 @@ ssyscall3(SYSCALL_SIGACTION, int, sigaction, int, sig, const struct sigaction*, 
 ssyscall1(SYSCALL_SIGPAUSE, int, sigpause, int, sig);
 ssyscall3(SYSCALL_SIGQUEUE, int, sigqueue, pid_t, id, int, sig, const union sigval, value);
 ssyscall2(SYSCALL_SIGWAIT, int, sigwait, const sigset_t*, set, int*, sig);
+ssyscall4(SYSCALL_PTHREAD_CREATE, int, pthread_create, pthread_t*, thread, const pthread_attr_t*, attr, pthread_start_fn, start_routine, void*, arg);
+ssyscall2(SYSCALL_PTHREAD_KILL, int, pthread_kill, pthread_t, thread, int, sig);
+ssyscall1(SYSCALL_PTHREAD_EXIT, int, pthread_exit, int, status_code);
 
 int ioctl(int fd, unsigned int request, ...)
 {

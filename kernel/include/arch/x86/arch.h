@@ -77,6 +77,12 @@ void arch_panic(const char *message, const char *file, uint32_t line);
  * Reboot the system
  */
 void reboot(void);
+
+/*
+ * Attribute used to make code executable from userland
+ */
+#define __usermode		__attribute__((section(".utext")))
+
 #endif
 
 

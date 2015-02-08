@@ -80,8 +80,11 @@
 #define SYSCALL_SIGPAUSE			(56)
 #define SYSCALL_SIGQUEUE			(57)
 #define SYSCALL_SIGWAIT			(58)
+#define SYSCALL_PTHREAD_KILL		(59)
+#define SYSCALL_PTHREAD_CREATE	(60)
+#define SYSCALL_PTHREAD_EXIT		(61)
 
-#define SYSCALL_COUNT			(59)
+#define SYSCALL_COUNT			(62)
 
 /*
  * initialize system call interface

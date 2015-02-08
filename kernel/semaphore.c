@@ -231,7 +231,7 @@ void semaphore_signal_sleep(semaphore_t *s)
 			if (likely(s->waiters != NULL))
 			{
 				s->waiters->waiting = 0;
-				killtask(s->waiters->pid, SIGCONT);
+				pthread_kill(s->waiters->pid, SIGCONT);
 			}
 			mutex_release((mutex_t*) &s->enter);
 			return;

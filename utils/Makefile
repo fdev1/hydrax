@@ -45,7 +45,7 @@ pipe: $(PIPE_OBJ)
 
 thread: $(THREAD_OBJ)
 	@echo -e "  LD\t\t$(THREAD_EXE)"
-	@$(LD) $(LDFLAGS) -o $(THREAD_EXE) $(THREAD_OBJ) ../libs/libc.a ../libs/libpthread.a
+	@$(LD) $(LDFLAGS) -o $(THREAD_EXE) $(THREAD_OBJ) ../libs/libc.a
 
 chown: $(CHOWN_OBJ)
 	@echo -e "  LD\t\t$(CHOWN_EXE)"

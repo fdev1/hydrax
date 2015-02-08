@@ -3,20 +3,10 @@
 
 #include <arch/arch.h>
 #include <unistd.h>
+#include <signal.h>
 
-typedef struct __pthread_attr
-{
-	int x;
-}
-pthread_attr_t;
-
-typedef struct __pthread
-{
-	pid_t id;
-	pthread_attr_t attribs;
-	void *stack;
-}
-pthread_t;
+typedef uint32_t pthread_attr_t;
+typedef void* (*pthread_start_fn)(void*);
 
 /*
  * Creates a new thread.
@@ -27,7 +17,9 @@ pthread_t;
  */
 int pthread_create(pthread_t * thread, 
 	const pthread_attr_t * attr,
-	void *(*start_routine)(void*),
+	pthread_start_fn start_routine,
 	void *arg);
+
+int pthread_exit(int status_code);
 
 #endif

@@ -292,7 +292,7 @@ int sigignore(int sig)
  */
 int sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 {
-	if (oldset != NULL)
+	if (likely(oldset != NULL))
 		*oldset = current_task->sigmask;
 	switch (how)
 	{
@@ -418,11 +418,11 @@ int sigqueue(pid_t tid, int sig, const union sigval value)
 /*
  * 
  */
-int killtask(pid_t pid, int signum)
+int pthread_kill(pthread_t t, int signum)
 {
 	int r;
 	mutex_wait(&schedule_lock);
-	r = killtask_nolock(pid, signum);
+	r = pthread_kill_nolock(t, signum);
 	mutex_release(&schedule_lock);
 	return r;
 }
@@ -432,7 +432,7 @@ int killtask(pid_t pid, int signum)
  * If tid is 0 the signal is sent to allocate
  * threads.
  */
-int killtask_nolock(pid_t tid, int sig)
+int pthread_kill_nolock(pthread_t tid, int sig)
 {
 	task_t *tmp;
 	if (tid == 0)
@@ -502,7 +502,7 @@ int kill_nolock(pid_t pid, int sig)
  */
 int raise(int signal)
 {
-	return killtask(current_task->id, signal);
+	return pthread_kill(current_task->id, signal);
 }
 
 /*
@@ -585,4 +585,105 @@ int sigwait(const sigset_t *set, int *sig)
 		pause();	
 	}
 	return -1;
+}
+
+/*
+ * Set and get signal alternate stack.
+ */ 
+int sigaltstack(const stack_t *ss, stack_t *oss)
+{
+	if (oss != NULL)
+		*oss = current_task->sig_altstack;
+	if (ss != NULL)
+	{
+		if (ss->ss_flags & ~SS_DISABLE)
+			return EINVAL;
+		if (ss->ss_size > MINSIGSTKSZ)
+			return ENOMEM;
+		current_task->sig_altstack = *ss;
+	}
+	return ESUCCESS;
+}
+
+/*
+ * Wait for a signal.
+ */
+int sigsuspend(const sigset_t *set)
+{
+	sigset_t oldmask;
+	oldmask = current_task->sigmask;
+	current_task->sigmask = *set;
+	while (1)
+	{
+		if (current_task->sig_delivered[0] & *set)
+		{
+			uint32_t sigbit;
+			int32_t signum;
+			signum = 0;
+			sigbit = 1;
+			while (1)
+			{
+				if (unlikely(sigbit & *set & current_task->sig_delivered[0]))
+				{
+					if (current_task->sig_delivered[3] & sigbit)
+						current_task->sig_delivered[3] &= ~sigbit;
+					else if (current_task->sig_delivered[2] & sigbit)
+						current_task->sig_delivered[2] &= ~sigbit;
+					else if (current_task->sig_delivered[1] & sigbit)
+						current_task->sig_delivered[1] &= ~sigbit;
+					else if (current_task->sig_delivered[0] & sigbit)
+						current_task->sig_delivered[0] &= ~sigbit;
+					signum++;
+					current_task->sigmask = oldmask;
+					return signum;
+				}
+				signum++;
+				sigbit <<= 1;
+			}
+		}
+		pause();
+	}
+	current_task->sigmask = oldmask;
+	return ESUCCESS;
+}
+
+int sigwaitinfo(const sigset_t *set, siginfo_t *info)
+{
+	if (set == NULL)
+		return EFAULT;
+	sigset_t oldmask;
+	oldmask = current_task->sigmask;
+	current_task->sigmask = *set;
+	while (1)
+	{
+		if (current_task->sig_delivered[0] & *set)
+		{
+			uint32_t sigbit;
+			int32_t signum;
+			signum = 0;
+			sigbit = 1;
+			while (1)
+			{
+				if (unlikely(sigbit & *set & current_task->sig_delivered[0]))
+				{
+					if (current_task->sig_delivered[3] & sigbit)
+						current_task->sig_delivered[3] &= ~sigbit;
+					else if (current_task->sig_delivered[2] & sigbit)
+						current_task->sig_delivered[2] &= ~sigbit;
+					else if (current_task->sig_delivered[1] & sigbit)
+						current_task->sig_delivered[1] &= ~sigbit;
+					else if (current_task->sig_delivered[0] & sigbit)
+						current_task->sig_delivered[0] &= ~sigbit;
+					signum++;
+					current_task->sigmask = oldmask;
+					return signum;
+				}
+				signum++;
+				sigbit <<= 1;
+			}
+		}
+		pause();
+	}
+	current_task->sigmask = oldmask;
+	return ESUCCESS;
 }

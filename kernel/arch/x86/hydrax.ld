@@ -1,10 +1,25 @@
 ENTRY(start)
 SECTIONS
 {
+	/*
+	 * This section contains kernel code that is
+	 * not visible from userland
+	 */
 	.text 0x100000 :
 	{
 		code = .; _code = .; __code = .;
 		*(.text)
+		. = ALIGN(4096);
+	}
+	
+	/*
+	 * This section contains code that is visible
+	 * and executable from userland
+	 */
+	.utext :
+	{
+		ucode = .; _ucode = .; __ucode = .;
+		*(.utext)
 		. = ALIGN(4096);
 	}
 

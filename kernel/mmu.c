@@ -29,6 +29,7 @@
 #include <mutex.h>
 #include <scheduler.h>
 #include <errno.h>
+#include <signal.h>
 
 #define MMU_PAGE_SIZE			(0x1000)
 #define MMU_CR0_PG				(0x0000)
@@ -600,13 +601,16 @@ unhandled_fault:
 
 	if (getpid() != 0)
 	{
-		killtask(current_task->id, SIGSEGV);
+		pthread_kill(current_task->id, SIGSEGV);
 		schedule();
 	}
 
 	mmu_dump_page( addr );
 	panic("PAGE_FAULT");
 }
+
+extern uint32_t ucode;
+extern uint32_t data;
 
 /*
  * initialize paging
@@ -691,8 +695,17 @@ void mmu_init(multiboot_header_t *p_mboot)
 	 * Map all used kernel pages
 	 */
 	for (i = 0; i < placement_address; i += MMU_PAGE_SIZE)
-		mmu_alloc_frame(i, &kernel_directory, 
+	{
+		if (unlikely(i >= ucode && i <= data))
+		{
+			mmu_alloc_frame(i, &kernel_directory, ALLOC_FRAME_USER);			
+		}
+		else
+		{
+			mmu_alloc_frame(i, &kernel_directory, 
 				ALLOC_FRAME_KERNEL | ALLOC_FRAME_WRITEABLE);
+		}
+	}
 
 	/*
 	 * On the kernel memmap, mark everything that is used

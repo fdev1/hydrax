@@ -103,8 +103,11 @@ struct sigaction
 {
 	sigset_t sa_mask;
 	int sa_flags;
-	void (*sa_handler)(int);
-	void (*sa_sigaction)(int, siginfo_t*, void*);
+	union
+	{
+		void (*sa_handler)(int);
+		void (*sa_sigaction)(int, siginfo_t*, void*);
+	};
 };
 
 /*
@@ -234,8 +237,12 @@ int kill(pid_t, int);
 
 int killpg(pid_t, int);
 
-#if 0
+/*
+ * Send signal to a thread
+ */
 int pthread_kill(pthread_t, int);
+
+#if 0
 int pthread_sigmask(int, const sigset_t *, sigset_t *); 
 #endif
 
@@ -296,6 +303,9 @@ static inline int sigfillset(sigset_t *set)
 	return ESUCCESS;
 }
 
+/*
+ * Set and get signal alternate stack.
+ */ 
 int sigaltstack(const stack_t *, stack_t *);
 
 /*
@@ -350,7 +360,11 @@ int sigrelse(int);
  */
 sighandler_t sigset(int, sighandler_t);
 
+/*
+ * Wait for a signal.
+ */
 int sigsuspend(const sigset_t *);
+
 int sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *);
 
 /*

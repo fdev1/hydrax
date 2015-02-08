@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 
 /*
  * test system call
@@ -109,6 +110,9 @@ static syscall_t syscalls[] =
 	{ &sigpause, 1 },
 	{ &sigqueue, 3 },
 	{ &sigwait, 2 },
+	{ &pthread_kill, 2 },
+	{ &pthread_create, 4 },
+	{ &pthread_exit, 1 },
 };
 
 /*

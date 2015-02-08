@@ -23,6 +23,7 @@
 #include <mmu.h>
 #include <vfs.h>
 #include <memmap.h>
+#include <pthread.h>
 
 #define SCHED_KERNEL_STACK_SIZE		(4096 * 0x10)
 #define CONFIG_ENV_INITIAL_SIZE		(1024)
@@ -53,7 +54,9 @@ typedef struct __task
 	gid_t egid;
 	uid_t saved_uid;
 	gid_t saved_gid;
-	int32_t errno;
+	pthread_attr_t attrs;
+	int errno;
+	unsigned int thread_stack;
 	unsigned int status;
 	int exit_code;
 	char **argv;

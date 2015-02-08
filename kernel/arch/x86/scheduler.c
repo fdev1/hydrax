@@ -179,6 +179,11 @@ void arch_move_stack(void *new_stack_start, uint32_t size)
 	asm volatile("mov %0, %%ebp" : : "r" (new_base_pointer));
 }
 
+/*
+ * Moves the kernel stack for the new task and
+ * sets the registers pointer in the task structure
+ * to point to the new stack.
+ */
 void arch_scheduler_move_the_fucking_task_stack(task_t *new_task)
 {
 	uint32_t* stack, *stack2;
@@ -212,6 +217,8 @@ void arch_scheduler_move_the_fucking_task_stack(task_t *new_task)
 	
 	uint32_t start;
 	start = (uint32_t) stack2;
+	
+	new_task->registers = (registers_t*) (uint32_t) ((uint32_t) current_task->registers + tmpi);
 	
 	if (SCHED_DEBUG_MOVE_TASK_STACK)
 		printk(7, "fork: moving 0x%x-0x%x to 0x%x-0x%x",

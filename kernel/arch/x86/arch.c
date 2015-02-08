@@ -17,6 +17,8 @@
 #include <printk.h>
 #include <symbols.h>
 #include <unistd.h>
+#include <syscall.h>
+#include <scheduler.h>
 
 /*
  * Write a byte to the specified port
@@ -42,6 +44,19 @@ uint16_t inw(uint16_t port)
     asm volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
     return ret;
 }
+
+/*
+ * If a new thread exits it'll return to this
+ * function. It calls the pthread_exit system call
+ * from userland.
+ */
+int __usermode pthread_uexit(void)
+{
+	asm __volatile__(			\
+		"int $0x30;" : : "a" (SYSCALL_PTHREAD_EXIT), "b" (-1));
+	return -1;
+}
+
 
 /*
  * Dump the contents of the stack on screen.
@@ -104,6 +119,29 @@ void arch_panic(const char *message, const char *file, uint32_t line)
 	arch_dump_stack_trace();
 	arch_halt();
 }
+
+void arch_queue_user_task(void *task_fn, void *ret_fn, uint32_t argc, uint32_t *argv)
+{
+	uint32_t *pstack;
+	
+	
+	pstack = (uint32_t*) current_task->registers->useresp;
+	
+	if (ret_fn == NULL)
+		ret_fn = (void*) current_task->registers->eip;
+	
+	*pstack-- = (uint32_t) pstack;
+	
+	while (argc--)
+		*pstack-- = (uint32_t) argv;
+	
+	*pstack-- = (uint32_t) ret_fn;
+	
+	current_task->registers->useresp = (uint32_t) pstack;
+	current_task->registers->eip = (uint32_t) task_fn;
+	
+}
+
 
 /*
  * reboot the system.

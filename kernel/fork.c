@@ -12,6 +12,7 @@
  * permission from the author.
  */
 
+
 #include <arch/arch.h>
 #include <mutex.h>
 #include <scheduler.h>
@@ -23,7 +24,8 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
-#include <syscall.h>
+#include <printk.h>
+#include <sys/types.h>
 
 static pid_t next_pid = 1;
 static pid_t next_tid = 1;
@@ -213,6 +215,7 @@ int fork(void)
 	new_task->egid = current_task->egid;
 	new_task->argv = NULL;
 	new_task->envp = NULL;
+	new_task->thread_stack = NULL;
 	new_task->status = TASK_STATE_RUNNING;
 	new_task->sigmask = current_task->sigmask;
 	new_task->exit_code = 0;
@@ -338,6 +341,7 @@ int clone(void *stack)
 	new_task->envp = current_task->envp;
 	new_task->status = TASK_STATE_RUNNING;
 	new_task->sigmask = current_task->sigmask;
+	new_task->thread_stack = (uint32_t) stack;
 	new_task->exit_code = 0;
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->env_lock = MUTEX_INITIALIZER;
@@ -388,20 +392,7 @@ int clone(void *stack)
 #define INITIAL_STACK_SIZE	(1024)
 
 /*
- * If a new thread exits it'll return to this
- * function. It calls the pthread_exit system call
- * from userland.
- */
-int __usermode pthread_uexit(void)
-{
-	asm __volatile__(			\
-		"int $0x30;" : : "a" (SYSCALL_PTHREAD_EXIT), "b" (-1));
-	return -1;
-}
-
-/*
- * TODO: We need to track and free stack.
- * Also look into using the old stack virtual space (with COW).
+ * TODO: look into using the old stack virtual space (with COW).
  * I'm not sure if it's possible as the old stack may need
  * to be shared.
  */
@@ -411,24 +402,19 @@ int pthread_create(pthread_t *thread,
 	pid_t pid;	
 	unsigned int *stack, *pstack;
 	
-	stack = (unsigned int*) malloc(INITIAL_STACK_SIZE * sizeof(unsigned int));
+	stack = (unsigned int*) kalloc(INITIAL_STACK_SIZE * sizeof(unsigned int), 
+							 NULL, NULL, KALLOC_OPTN_ALIGN);
 	if (stack == NULL)
 		return ENOMEM;
-	
+
 	pid = clone(&stack[INITIAL_STACK_SIZE - 1]);
 	if (pid < 0)
 		return -1;
 	
 	if (pid == 0)
 	{
-		pstack = (uint32_t*) current_task->registers->useresp;
-		
-		*pstack-- = (uint32_t) pstack;
-		*pstack-- = (uint32_t) arg;
-		*pstack-- = (uint32_t) &pthread_uexit;
-		
-		current_task->registers->useresp = (uint32_t) pstack;
-		current_task->registers->eip = (uint32_t) start_routine;
+		arch_queue_user_task(start_routine, &pthread_uexit, 1, (void*) &arg);
+		current_task->attrs = *attr;
 	}
 	return *thread = pid;
 }

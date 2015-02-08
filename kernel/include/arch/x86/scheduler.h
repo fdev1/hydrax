@@ -67,7 +67,7 @@ task_state_t;
  * buffer. Currently it assumes that the stack grown downwards
  * so it's not very portable. TODO: We need to FIX that.
  */
-#define arch_adj_user_stack_pointer(stack)		(stack - (ARCH_STACK_START - current_task->registers->useresp))
+#define arch_adj_user_stack_pointer(stack)		((stack) - (ARCH_STACK_START - current_task->registers->useresp))
 
 /*
  * Copy the user-mode stack. This is a simple copy of the

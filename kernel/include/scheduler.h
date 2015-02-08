@@ -57,6 +57,7 @@ typedef struct __task
 	pthread_attr_t attrs;
 	int errno;
 	unsigned int thread_stack;
+	unsigned int thread_stack_start;
 	unsigned int status;
 	int exit_code;
 	char **argv;

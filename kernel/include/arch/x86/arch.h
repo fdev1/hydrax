@@ -123,6 +123,11 @@ void reboot(void);
 void arch_dump_stack(unsigned int len);
 void arch_dump_stack_trace(void);
 
+int pthread_uexit(void);
+
+
+void arch_queue_user_task(void *task_fn, void *ret_fn, uint32_t argc, uint32_t *argv);
+
 /*
  * Allocate stack memory.
  */

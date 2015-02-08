@@ -418,3 +418,4 @@ int pthread_create(pthread_t *thread,
 	}
 	return *thread = pid;
 }
+

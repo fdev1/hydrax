@@ -107,13 +107,8 @@ void reboot(void);
 #define arch_atomic_decrement32(var)	asm volatile("lock; dec (%0)" : : "r" (&var))
 
 
-#if 0
-#	define likely(x)      				(x)
-#	define unlikely(x)    				(x)
-#else
-#	define likely(x)      				(__builtin_expect(!!(x), 1))
-#	define unlikely(x)    				(__builtin_expect(!!(x), 0))
-#endif
+#define likely(x)      				(__builtin_expect(!!(x), 1))
+#define unlikely(x)    				(__builtin_expect(!!(x), 0))
 
 /*
  * Atomically exchange a register and memory location

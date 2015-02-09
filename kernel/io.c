@@ -23,8 +23,7 @@
 #include <semaphore.h>
 #include <assert.h>
 #include <errno.h>
-
-#define PIPE_BUFFER_SIZE		(1024)
+#include "config.inc"
 
 static inline bool check_file_permissions(vfs_node_t* node, uint32_t mask)
 {
@@ -40,7 +39,7 @@ static inline bool check_file_permissions(vfs_node_t* node, uint32_t mask)
 /*
  * Gets a file descriptor
  */
-static inline file_t *get_file_descriptor(unsigned int fd)
+file_t *get_file_descriptor(unsigned int fd)
 {
 	file_t *f;
 	desc_info_t *desc_table;
@@ -405,7 +404,7 @@ int pipe(int pipefd[2])
 		return ENOMEM;
 	}
 	
-	pipe->buf = (void*) malloc(PIPE_BUFFER_SIZE);
+	pipe->buf = (void*) malloc(CONFIG_PIPE_BUFFER_SIZE);
 	if (pipe->buf == NULL)
 	{
 		free(pipe);
@@ -413,10 +412,10 @@ int pipe(int pipefd[2])
 		return ENOMEM;
 	}
 	
-	pipe->buf_end = pipe->buf + PIPE_BUFFER_SIZE;
+	pipe->buf_end = pipe->buf + CONFIG_PIPE_BUFFER_SIZE;
 	pipe->read_ptr = pipe->buf;
 	pipe->write_ptr = pipe->buf;
-	pipe->semaphore = SEMAPHORE_INITIALIZER(PIPE_BUFFER_SIZE, PIPE_BUFFER_SIZE);
+	pipe->semaphore = SEMAPHORE_INITIALIZER(CONFIG_PIPE_BUFFER_SIZE, CONFIG_PIPE_BUFFER_SIZE);
 	
 	*node = VFS_NODE_INITIALIZER(FS_PIPE | FS_AUTOFREE);
 	node->read = (vfs_read_fn_t) &pipe_read;

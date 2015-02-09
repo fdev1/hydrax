@@ -21,6 +21,7 @@
 #include <devfs.h>
 #include <string.h>
 #include <errno.h>
+#include "../../config.inc"
 
 #if defined(KERNEL_CODE)
 #	undef KERNEL_CODE
@@ -31,20 +32,8 @@
 #define KBD_RIGHT_SHIFT		(129)
 #define KBD_ALT			(130)
 
-#define KBD_INPUT_BUFFER_SIZE		(1024)
-
-
-typedef struct kbd_handler_list
-{
-	kbd_handler_t handler;
-	struct kbd_handler_list *next;
-	
-}
-kbd_handler_list_t;
-
 static vfs_node_t *kbd = NULL;
 static keymask_t keymask = { 0 };
-static kbd_handler_list_t *handlers = NULL;
 static unsigned char *keymap;
 
 static unsigned char *kbd_input_buffer = NULL;
@@ -146,26 +135,15 @@ static void kbd_input_handler(registers_t *rigs)
 
 				}
 				
-				#if 1
-				if (kbd_input_buffer_len < KBD_INPUT_BUFFER_SIZE)
+				if (kbd_input_buffer_len < CONFIG_KBD_INPUT_BUFFER_SIZE)
 				{
 					*kbd_input_buffer_whead++ = c;
 					if (kbd_input_buffer_whead >=
-						&kbd_input_buffer[KBD_INPUT_BUFFER_SIZE])
+						&kbd_input_buffer[CONFIG_KBD_INPUT_BUFFER_SIZE])
 						kbd_input_buffer_whead = kbd_input_buffer;
 					kbd_input_buffer_len++;
 					semaphore_signal_sleep(&kbd_semaphore);
 				}
-				
-				#else
-				kbd_handler_list_t *tmp;
-				tmp = handlers;
-				while (tmp != NULL)
-				{
-					tmp->handler(c, keymask);
-					tmp = tmp->next;
-				}
-				#endif
 				break;
 		}
 	}
@@ -183,7 +161,7 @@ static int kbd_read(vfs_node_t *node, uint32_t offset, uint32_t len, uint8_t *bu
 		semaphore_waitsleep(&kbd_semaphore);
 		*buf++ = *kbd_input_buffer_rhead++;
 		if (kbd_input_buffer_rhead >=
-			&kbd_input_buffer[KBD_INPUT_BUFFER_SIZE])
+			&kbd_input_buffer[CONFIG_KBD_INPUT_BUFFER_SIZE])
 			kbd_input_buffer_rhead = kbd_input_buffer;
 		len--;
 		kbd_input_buffer_len--;
@@ -218,10 +196,10 @@ void kbd_init(void)
 	/*
 	 * allocate input buffer and register keyboard handler
 	 */
-	kbd_input_buffer = (unsigned char*) malloc(KBD_INPUT_BUFFER_SIZE);
+	kbd_input_buffer = (unsigned char*) malloc(CONFIG_KBD_INPUT_BUFFER_SIZE);
 	if (kbd_input_buffer == NULL)
 		panic("tty_init: out of memory!");
-	kbd_semaphore = SEMAPHORE_INITIALIZER(KBD_INPUT_BUFFER_SIZE, KBD_INPUT_BUFFER_SIZE);
+	kbd_semaphore = SEMAPHORE_INITIALIZER(CONFIG_KBD_INPUT_BUFFER_SIZE, CONFIG_KBD_INPUT_BUFFER_SIZE);
 	register_isr(IRQ1, &kbd_input_handler);
 	printk(7, "kbd: keyboard ready");
 }
@@ -232,32 +210,4 @@ void kbd_init(void)
 void kbd_setkeymap(unsigned char *map)
 {
 	keymap = map;
-}
-
-/*
- * registers a handler for kbd input
- */
-void* kbd_register_handler(kbd_handler_t handler)
-{
-	kbd_handler_list_t *h, *tmp;
-	
-	/* TODO: why are we not using malloc()? */
-	h = (kbd_handler_list_t*) malloc(sizeof(kbd_handler_list_t));
-	assert(h != NULL);
-
-	h->handler = handler;
-	h->next = NULL;
-
-	if (handlers == NULL)
-	{
-		handlers = h;
-	}
-	else
-	{
-		tmp = handlers;
-		while (tmp->next != NULL)
-			tmp = tmp->next;
-		tmp->next = h;
-	}
-	return (void*) h;
 }

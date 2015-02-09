@@ -24,13 +24,9 @@ typedef struct
 }
 keymask_t;
 
-
-
-typedef void (*kbd_handler_t)(char, keymask_t);
-
-
+/*
+ * Initialize the keyboard driver
+ */
 void kbd_init(void);
-void* kbd_register_handler(kbd_handler_t handler);
 
 #endif
-

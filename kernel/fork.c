@@ -26,6 +26,7 @@
 #include <pthread.h>
 #include <printk.h>
 #include <sys/types.h>
+#include "config.inc"
 
 static pid_t next_pid = 1;
 static pid_t next_tid = 1;
@@ -389,12 +390,11 @@ int clone(void *stack)
 	return ret;
 }
 
-#define INITIAL_STACK_SIZE	(1024)
-
 /*
  * TODO: look into using the old stack virtual space (with COW).
  * I'm not sure if it's possible as the old stack may need
- * to be shared.
+ * to be shared (ie. the new thread should be able to access
+ * data on the old thread's stack).
  */
 int pthread_create(pthread_t *thread, 
 	const pthread_attr_t *attr, pthread_start_fn start_routine, void *arg)
@@ -402,12 +402,13 @@ int pthread_create(pthread_t *thread,
 	pid_t pid;	
 	unsigned int *stack, *pstack;
 	
-	stack = (unsigned int*) kalloc(INITIAL_STACK_SIZE * sizeof(unsigned int), 
-							 NULL, NULL, KALLOC_OPTN_ALIGN);
+	stack = (unsigned int*) kalloc(
+		CONFIG_INITIAL_THREAD_STACK_SIZE * sizeof(unsigned int), 
+		NULL, NULL, KALLOC_OPTN_ALIGN);
 	if (stack == NULL)
 		return ENOMEM;
 
-	pid = clone(&stack[INITIAL_STACK_SIZE - 1]);
+	pid = clone(&stack[CONFIG_INITIAL_THREAD_STACK_SIZE - 1]);
 	if (pid < 0)
 		return -1;
 	

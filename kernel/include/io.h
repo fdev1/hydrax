@@ -47,6 +47,11 @@ typedef struct  __descriptor_table
 desc_info_t, desc_entry_t;
 
 /*
+ * Get an open file descriptor
+ */
+file_t *get_file_descriptor(unsigned int fd);
+
+/*
  * Clones the current task file descriptors list.
  */
 desc_info_t *clone_descriptor_table(void);

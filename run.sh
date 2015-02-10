@@ -1,11 +1,10 @@
 #!/bin/sh
 
 cd libs
-make clean
+make
 cd ../utils
-make clean
+make
 cd ../kernel
-make clean
+make run
 cd ..
-rm -f hydrax.img
 

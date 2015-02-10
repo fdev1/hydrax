@@ -5,3 +5,7 @@ all:
 clean:
 	./clean.sh
 
+run: 
+	./run.sh
+
+

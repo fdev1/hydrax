@@ -13,7 +13,7 @@
  *
  */
 
-#ifndef __MMU_H__
+#ifndef __MMU_H__	
 #define __MMU_H__
 
 #include <arch/arch.h>
@@ -33,6 +33,7 @@
 #define KALLOC_OPTN_PUBLIC		(0x0042)  /* invisible from userspace */
 #define KALLOC_OPTN_NOCOW		(0x0080)  /* no commit on write */
 #define KALLOC_OPTN_NOSHARE		(0x0100)	/* do not share with child threads */
+#define KALLOC_OPTN_MMAP			(0x0200)	/* memory used by mmap */
 
 #define CLONE_COPY				(0x00)
 #define CLONE_SHARE				(0x01)
@@ -78,7 +79,8 @@ typedef struct
 	unsigned int commited:1;
 	unsigned int cow:1;
 	unsigned int noshare:1;
-	unsigned int pad:29;
+	unsigned int mmap:1;
+	unsigned int pad:28;
 }
 page_info_t;
 

@@ -95,6 +95,7 @@ kernel: $(SOURCES)
 	@/sbin/debugfs -w ../hydrax.img -R "rm initrd"
 	@/sbin/debugfs -w ../hydrax.img -R "write hydrax hydrax"
 	@/sbin/debugfs -w ../hydrax.img -R "write initrd.img initrd"
+	#-@/sbin/e2fsck -f ../hydrax.img
 .s.o:
 	@echo -e "  AS\t\t"$<
 	@$(AS) $(ASFLAGS) -c $< -o $@

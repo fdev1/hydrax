@@ -259,6 +259,8 @@ static intptr_t kalloc_premmu(uint32_t sz, uint32_t virt, uint32_t *phys, uint32
  * If phys is not NULL the location pointed by it is set to the physical
  * address that the page was mapped to.
  * If the KALLOC_OPTN_KERNEL is specified
+ * 
+ * TODO: This needs to be cleaned up soon as it's getting messy.
  */
 intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 {
@@ -306,7 +308,7 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	 * lock the memmap and attempt to allocate the requested
 	 * pages from it.
 	 */
-	mutex_busywait(&memmap->lock);
+	mutex_wait(&memmap->lock);
 	if (vaddr != NULL)
 	{
 		assert((vaddr & 0xFFF) == 0);
@@ -351,24 +353,24 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	page_info = &dir->tables[addr / 1024]->pages_info[addr % 1024];
 	page_info->cow = cow;
 	page_info->noshare = ((flags & KALLOC_OPTN_NOSHARE) != 0);
+	page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
 	if (page_info->noshare == 1)
-	{
 		dir->tables[addr / 1024]->noshare = 1;
-	}
-	*phys = mmu_alloc_frame(vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+	if (page_info->mmap == 0)
+		*phys = mmu_alloc_frame(vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
 	for (tmp_vaddr = vaddr + 0x1000; tmp_vaddr < vaddr + sz; tmp_vaddr += 0x1000)
 	{
 		addr = tmp_vaddr / MMU_PAGE_SIZE;
 		page = mmu_get_page(tmp_vaddr, 1, dir);
-		page_info = &dir->tables[addr / 1024]->pages_info[addr % 1024];
-		page_info->noshare = ((flags & KALLOC_OPTN_NOSHARE) != 0);
-		if (page_info->noshare == 1)
-		{
-			dir->tables[addr / 1024]->noshare = 1;
-		}
 		assert(page != NULL);
 		page_info->cow = cow;
-		mmu_alloc_frame(tmp_vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+		page_info = &dir->tables[addr / 1024]->pages_info[addr % 1024];
+		page_info->noshare = ((flags & KALLOC_OPTN_NOSHARE) != 0);
+		page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
+		if (page_info->noshare == 1)
+			dir->tables[addr / 1024]->noshare = 1;
+		if (page_info->mmap == 0)
+			mmu_alloc_frame(tmp_vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
 	}
 
 	if ((flags & KALLOC_OPTN_NOFREE) == 0 && kheap.len)

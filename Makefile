@@ -5,7 +5,8 @@ all:
 clean:
 	./clean.sh
 
-run: 
+run:
+	cp files/hydrax.img hydrax.img
 	./run.sh
 
 

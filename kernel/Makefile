@@ -91,9 +91,10 @@ kernel: $(SOURCES)
 		../files/shellrc /etc/shellrc > /dev/null
 		
 	@echo -e "  MKIMAGE\thydrax.img"
-	@cp hydrax ../image/hydrax
-	@cp initrd.img ../image/initrd
-	@sync
+	@/sbin/debugfs -w ../hydrax.img -R "rm hydrax"
+	@/sbin/debugfs -w ../hydrax.img -R "rm initrd"
+	@/sbin/debugfs -w ../hydrax.img -R "write hydrax hydrax"
+	@/sbin/debugfs -w ../hydrax.img -R "write initrd.img initrd"
 .s.o:
 	@echo -e "  AS\t\t"$<
 	@$(AS) $(ASFLAGS) -c $< -o $@

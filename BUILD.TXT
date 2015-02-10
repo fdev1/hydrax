@@ -3,12 +3,12 @@ Requirements
 
 - x86 GCC
 - x86 GAS
-- GRUB2
-- mtools
+- GRUB Legacy
+- debugfs
 
 Build
 =====
 
-Just run build.sh
+Just run make.
 
 

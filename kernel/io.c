@@ -250,6 +250,19 @@ static size_t pipe_write(vfs_node_t* node, uint32_t offset, uint32_t len, uint8_
 }
 
 /*
+ * Rewind file descriptor
+ */
+int rewind(int fd)
+{
+	file_t *f;
+	f = get_file_descriptor(fd);
+	if (unlikely(f == NULL))
+		return EBADF;
+	f->offset = 0;
+	return ESUCCESS;
+}
+
+/*
  * Duplicates a file descriptor
  */
 int dup(int oldfd)
@@ -317,7 +330,26 @@ int unlink(const char *path)
  */
 off_t lseek(int fd, off_t offset, int whence)
 {
-	return ENOSYS;
+	file_t *f;
+	f = get_file_descriptor(fd);
+	if (unlikely(f == NULL))
+		return EBADF;
+	switch (whence)
+	{
+		case SEEK_SET:
+			f->offset = offset;
+			break;
+		case SEEK_CUR:
+			f->offset += offset;
+			break;
+		case SEEK_END:
+			f->offset = f->node->length + offset;
+			break;
+		default:
+			return EINVAL;
+		
+	}
+	return ESUCCESS;
 }
 
 /*

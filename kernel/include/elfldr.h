@@ -19,7 +19,7 @@
 #include <arch/arch.h>
 #include <vfs.h>
 
-intptr_t elf_load(vfs_node_t *node);
+intptr_t elf_load(int);
 
 #endif
 

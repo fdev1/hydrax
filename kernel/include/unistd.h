@@ -24,6 +24,10 @@
 #define S_ISDIR(mode)			(mode & MODE_TYPE_DIRECTORY)
 #define S_ISCHR(mode)			(mode & MODE_TYPE_CHARDEVICE)
 
+#define SEEK_SET 				(0x1)
+#define SEEK_CUR				(0x2)
+#define SEEK_END				(0x3)
+
 #include <vfs.h>
 #include <sys/stat.h>
 
@@ -284,6 +288,10 @@ int isatty(int fd);
  */
 void pause(void);
 
+/*
+ * Rewind file descriptor
+ */
+int rewind(int fd);
 
 #endif
 

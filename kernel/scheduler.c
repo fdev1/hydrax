@@ -439,7 +439,7 @@ int exec(char *path, ...)
  */
 int execve(const char *path, char *const argv[], char *const envp[])
 {
-	int i, j, l;
+	int i, j, l, fd;
 	intptr_t vaddr;
 	char *next_arg;
 	vfs_node_t *node;
@@ -450,17 +450,17 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	if (unlikely(path == NULL || *path == NULL))
 		return EBADF;
 	
-	node = vfs_open(path, NULL);
-	if (node == NULL)
-		return ENOENT;
-	
+	fd = open(path, NULL);
+	if (fd < 0)
+		return -1;
+		
 	while (current_task->buffers != NULL)
 		kfree((void*) current_task->buffers->address);
 	
 	current_task->sigmask = 0;
 	clear_task_signals(current_task);
 	
-	vaddr = elf_load(node);
+	vaddr = elf_load(fd);
 	if (vaddr == NULL)
 	{
 		printk(6, "exec: could not load elf!");

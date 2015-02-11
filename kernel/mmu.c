@@ -30,6 +30,7 @@
 #include <scheduler.h>
 #include <errno.h>
 #include <signal.h>
+#include <io.h>
 
 #define MMU_PAGE_SIZE			(0x1000)
 #define MMU_CR0_PG				(0x0000)
@@ -94,9 +95,24 @@
 
 
 /*
+ * Structure used by the MMU driver to keep
+ * track of file mappings.
+ */
+typedef struct __kernel_mmap
+{
+	mmap_info_t *mmap;			/* master mmap */
+	vfs_node_t *node;			/* vfs node mapped */
+	page_directory_t *directory;	/* directory containing the master mapping */
+	struct __kernel_mmap *next;	/* next */
+}
+kmmap_t;
+
+/*
  * imports
  */
-extern uint32_t end;    /* defined by linker */
+extern uint32_t ucode;		/* defined by linker */
+extern uint32_t data;		/* defined by linker */
+extern uint32_t end;    		/* defined by linker */
 extern kheap_t kheap;
 
 /*
@@ -110,6 +126,8 @@ static uint32_t placement_address = (uint32_t) &end;
 static uint32_t *frame_refs;
 static mutex_t frame_refs_lock = MUTEX_INITIALIZER;
 static buffer_t *kernel_buffers = NULL;
+static kmmap_t *kmmaps = NULL;
+static mutex_t kmmaps_lock = MUTEX_INITIALIZER;
 
 /*
  * Globals
@@ -258,7 +276,12 @@ static intptr_t kalloc_premmu(uint32_t sz, uint32_t virt, uint32_t *phys, uint32
  * If virt is not NULL the page is allocated at the address specified by it.
  * If phys is not NULL the location pointed by it is set to the physical
  * address that the page was mapped to.
- * If the KALLOC_OPTN_KERNEL is specified
+ * If the KALLOC_OPTN_KERNEL is specified the page is allocated in
+ * the kernel directory.
+ * 
+ * If the KALLOC_OPTN_MMAP is specified the page is allocated and marked
+ * as a memory mapped file page but it is not mapped. The mapping will happen
+ * when the page is accessed.
  * 
  * TODO: This needs to be cleaned up soon as it's getting messy.
  */
@@ -273,13 +296,7 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	if (phys == NULL)
 		phys = &physmem;
 	
-	if (MMU_DEBUG_KALLOC)
-	{
-		printk(8, "kalloc: using kalloc.");
-		printk(8, "kalloc(%i, %x, %x, %x)", sz, vaddr, (uint32_t) phys, flags);
-	}
-
-	if (current_directory == NULL)
+	if (unlikely(current_directory == NULL))
 		return kalloc_premmu(sz, vaddr, phys, flags);
 	
 	/* make sure that the virtual address is aligned */
@@ -324,7 +341,7 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	else
 	{
 		vaddr = memmap_find_free_pages(memmap, (sz + 0xFFF) / 0x1000) * 0x1000;
-		if (vaddr == NULL)
+		if (unlikely(vaddr == NULL))
 		{
 			mutex_release(&memmap->lock);
 			return NULL;
@@ -356,8 +373,11 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
 	if (page_info->noshare == 1)
 		dir->tables[addr / 1024]->noshare = 1;
-	if (page_info->mmap == 0)
+	if (likely(page_info->mmap == 0))
 		*phys = mmu_alloc_frame(vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+	else
+		*phys = 0;
+	
 	for (tmp_vaddr = vaddr + 0x1000; tmp_vaddr < vaddr + sz; tmp_vaddr += 0x1000)
 	{
 		addr = tmp_vaddr / MMU_PAGE_SIZE;
@@ -369,7 +389,7 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 		page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
 		if (page_info->noshare == 1)
 			dir->tables[addr / 1024]->noshare = 1;
-		if (page_info->mmap == 0)
+		if (likely(page_info->mmap == 0))
 			mmu_alloc_frame(tmp_vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
 	}
 
@@ -562,33 +582,201 @@ void page_fault(registers_t *regs)
 	page_info = &current_directory->tables[indx]->pages_info[offs];
 	refs = &frame_refs[page->frame];
 	
-	if (page != NULL && page_info->commited == 0 && rw != 0)
+	if (page != NULL && page_info->commited == 0)
 	{
-		mutex_busywait(&frame_refs_lock);
-		if (frame_refs[page->frame] == 1)
+		/*
+		 * The page is mapped to a file
+		 * 
+		 * TODO: For now the 1st access to a mmaped file
+		 * will cause the whole file to be read into physical
+		 * memory.
+		 * 
+		 */
+		if (page_info->mmap == 1)
 		{
-			page->rw = 1;
-			page_info->commited = 1;
-			arch_invalidate_page(address);
-			mutex_release(&frame_refs_lock);
+			mmap_info_t *mmap;
+			kmmap_t *kmmap, **pkmmap;
+			file_t *f;
+
+			mutex_wait(&current_task->mmaps_lock);
+			mmap = current_task->mmaps;
+			while (mmap != NULL)
+			{
+				if (unlikely(address >= (intptr_t) mmap->addr && 
+					address <= ((intptr_t) mmap->addr + mmap->len)))
+					break;
+				mmap = mmap->next;
+			}
+			mutex_release(&current_task->mmaps_lock);
+			
+			if (unlikely(mmap == NULL))
+				goto unhandled_fault;
+			
+			f = get_file_descriptor(mmap->fd);
+			if (unlikely(f == NULL))
+				goto unhandled_fault;
+			
+			/*
+			 * Look for an existing mapping for the same
+			 * file node and offset
+			 */
+			mutex_wait(&kmmaps_lock);
+			for (kmmap = kmmaps; kmmap != NULL; kmmap = kmmap->next)
+				if (kmmap->node == f->node && mmap->offset == kmmap->mmap->offset)
+					break;
+			
+			if (kmmap != NULL)	/* if there's an existing mapping... */
+			{
+				off_t f_offset;
+				intptr_t m_vaddr, c_vaddr;
+				page_t *c_page, *m_page;
+				page_info_t *c_page_info, *m_page_info;
+				const uint32_t c_addr = (intptr_t) mmap->addr / MMU_PAGE_SIZE;
+				uint32_t c_indx = addr / 1024;
+				uint32_t c_offs = addr % 1024;
+				const uint32_t m_addr = (intptr_t) kmmap->mmap->addr / MMU_PAGE_SIZE;
+				uint32_t m_indx = addr / 1024;
+				uint32_t m_offs = addr % 1024;
+				
+				f_offset = mmap->offset;
+				c_page = &current_directory->tables[c_indx]->pages[c_offs];
+				c_page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
+				m_page = &kmmap->directory->tables[m_indx]->pages[c_offs];
+				m_page_info = &kmmap->directory->tables[m_indx]->pages_info[c_offs];
+				
+				/*
+				 * Copy all the mappings from the master
+				 * mapping directory.
+				 */
+				c_vaddr = (intptr_t) mmap->addr;
+				m_vaddr = (intptr_t) kmmap->mmap->addr;
+				while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
+				{
+					mutex_wait(&frame_refs_lock);
+					frame_refs[m_page->frame]++;
+					mutex_release(&frame_refs_lock);
+							
+					*c_page++ = *m_page++;
+					*c_page_info++ = *m_page_info++;	
+					arch_invalidate_page(c_vaddr);
+					c_vaddr += MMU_PAGE_SIZE;
+					m_vaddr += MMU_PAGE_SIZE;
+					f_offset += MMU_PAGE_SIZE;
+					
+					if (unlikely(++c_offs == 1024))
+					{
+						c_offs = 0;
+						c_indx++;
+						c_page = &current_directory->tables[c_indx]->pages[c_offs];
+						c_page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
+					}
+					if (unlikely(++m_offs == 1024))
+					{
+						m_offs = 0;
+						m_indx++;
+						m_page = &kmmap->directory->tables[m_indx]->pages[c_offs];
+						m_page_info = &kmmap->directory->tables[m_indx]->pages_info[c_offs];
+					}
+				}
+				
+				/*
+				 * If the length of this mapping is greater
+				 * than the existing mapping we map all the mappings
+				 * from the master mapping to our address space, then
+				 * map the remaining pages and replace the current
+				 * master mapping info with ours.
+				 */
+				if (mmap->len > kmmap->mmap->len)
+				{
+					while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
+					{
+						mmu_alloc_frame(c_vaddr, current_directory, 
+							ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+						vfs_read(f->node, f_offset, MMU_PAGE_SIZE, (uint8_t*) c_vaddr);
+						c_vaddr += MMU_PAGE_SIZE;
+						f_offset += MMU_PAGE_SIZE;
+					}
+					kmmap->mmap = mmap;
+				}
+			}
+			else	/* if there's no existing mapping... */
+			{
+				off_t f_offset;
+				page_t *c_page;
+				page_info_t *c_page_info, *m_page_info;
+				uint32_t c_vaddr;
+				const uint32_t c_addr = (intptr_t) mmap->addr / MMU_PAGE_SIZE;
+				const uint32_t c_indx = addr / 1024;
+				const uint32_t c_offs = addr % 1024;
+				
+				kmmap = (kmmap_t*) malloc(sizeof(kmmap_t));
+				if (unlikely(kmmap == NULL))
+				{
+					mutex_release(&kmmaps_lock);
+					goto unhandled_fault;
+				}
+				kmmap->mmap = mmap;
+				kmmap->directory = current_directory;
+				kmmap->node = f->node;
+				kmmap->next;
+				
+				assert(current_directory->tables[c_indx] != NULL);
+				
+				page = &current_directory->tables[c_indx]->pages[c_offs];
+				page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
+				f_offset = mmap->offset;
+				c_vaddr = (intptr_t) mmap->addr;
+				
+				while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
+				{
+					mmu_alloc_frame(c_vaddr, current_directory, 
+						ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+					vfs_read(f->node, f_offset, MMU_PAGE_SIZE, (uint8_t*) c_vaddr);
+					c_vaddr += MMU_PAGE_SIZE;
+					f_offset += MMU_PAGE_SIZE;
+				}
+					
+				pkmmap = &kmmaps;
+				while (*pkmmap != NULL)
+					pkmmap = &(*pkmmap)->next;
+				*pkmmap = kmmap;
+			}			
+
+			mutex_release(&kmmaps_lock);
 			return;
 		}
-		else
+		/*
+		 * The page is mapped but not commited
+		 * for write access
+		 */
+		else if (rw != 0)
 		{
-			uint32_t frame;
-			frame = page->frame;
-			page->frame = 0;
-			mmu_alloc_frame(address, current_directory, 
-				ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
-			assert(page->frame != NULL);
-			frame_refs[frame]--;
-			
-			copy_physical_page(
-				page->frame * MMU_PAGE_SIZE, 
-				frame * MMU_PAGE_SIZE);
-			
-			mutex_release(&frame_refs_lock);
-			return;
+			mutex_busywait(&frame_refs_lock);
+			if (frame_refs[page->frame] == 1)
+			{
+				page->rw = 1;
+				page_info->commited = 1;
+				arch_invalidate_page(address);
+				mutex_release(&frame_refs_lock);
+				return;
+			}
+			else
+			{
+				uint32_t frame;
+				frame = page->frame;
+				page->frame = 0;
+				mmu_alloc_frame(address, current_directory, 
+					ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+				assert(page->frame != NULL);
+				frame_refs[frame]--;
+				
+				copy_physical_page(
+					page->frame * MMU_PAGE_SIZE, 
+					frame * MMU_PAGE_SIZE);
+				
+				mutex_release(&frame_refs_lock);
+				return;
+			}
 		}
 	}
 	
@@ -610,9 +798,6 @@ unhandled_fault:
 	mmu_dump_page( addr );
 	panic("PAGE_FAULT");
 }
-
-extern uint32_t ucode;
-extern uint32_t data;
 
 /*
  * initialize paging
@@ -824,7 +1009,7 @@ page_directory_t *mmu_clone_directory(
 	/* allocate page directory in kernel memory */
 	dir = (page_directory_t*) kalloc(sizeof(page_directory_t),
 		NULL, &physmem, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
-	if (dir == NULL)
+	if (unlikely(dir == NULL))
 		return NULL;
 	memset(dir, 0, sizeof(page_directory_t));
 

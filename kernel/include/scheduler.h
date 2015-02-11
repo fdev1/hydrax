@@ -24,6 +24,7 @@
 #include <vfs.h>
 #include <memmap.h>
 #include <pthread.h>
+#include <sys/mman.h>
 
 #define SCHED_KERNEL_STACK_SIZE		(4096 * 0x10)
 #define CONFIG_ENV_INITIAL_SIZE		(1024)
@@ -71,6 +72,8 @@ typedef struct __task
 	vfs_node_t *procfs_node;
 	vfs_node_t *cwd;
 	vfs_node_t *root;
+	mmap_info_t *mmaps;
+	mutex_t mmaps_lock;
 	mutex_t env_lock;
 	mutex_t lock;
 	struct __buffer *buffers;

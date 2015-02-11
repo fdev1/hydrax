@@ -100,6 +100,8 @@ void scheduler_init(void)
 	idle_task.descriptors_info = descriptors;
 	idle_task.lock = MUTEX_INITIALIZER;
 	idle_task.env_lock = MUTEX_INITIALIZER;
+	idle_task.mmaps_lock = MUTEX_INITIALIZER;
+	idle_task.mmaps = NULL;
 	idle_task.cwd = NULL;
 	idle_task.root = NULL;
 	idle_task.argv = NULL;

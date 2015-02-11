@@ -54,6 +54,8 @@
 #define POSIX_TYPED_MEM_ALLOCATE_CONTIG	(0x20000)	/* Allocate contiguously on mmap() */
 #define POSIX_TYPED_MEM_MAP_ALLOCATABLE	(0x40000)	/* Map on mmap(), without affecting allocatability. */
 
+struct posix_typed_mem_info;
+
 int mlock(const void *, size_t);
 int mlockall(int);
 void *mmap(void *, size_t, int, int, int, off_t);
@@ -79,7 +81,7 @@ typedef struct __mmap_info
 	void *addr;
 	size_t len;
 	off_t offset;
-	vfs_node_t node;
+	int fd;
 	struct __mmap_info *next;
 }
 mmap_info_t;

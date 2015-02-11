@@ -112,6 +112,7 @@ int fork(void)
 	intptr_t phys, kernel_stack;
 	vfs_node_t *procfs_node;
 	pid_t new_pid, new_tid;
+	mmap_info_t *pmmap, **next_mmap;
 	
 	mutex_wait((mutex_t*) &pid_lock);
 	new_pid = next_pid++;
@@ -223,6 +224,7 @@ int fork(void)
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->descriptors_info = descriptors;
 	new_task->env_lock = MUTEX_INITIALIZER;
+	new_task->mmaps_lock = MUTEX_INITIALIZER;
 	new_task->cwd = current_task->cwd;
 	new_task->argv = NULL;
 	new_task->buffers = NULL;
@@ -235,6 +237,29 @@ int fork(void)
 	new_task->next_thread = NULL;
 	new_task->next = NULL;
 	
+	/*
+	 * Copy the current task mmaps.
+	 */
+	mutex_wait(&current_task->mmaps_lock);
+	pmmap = current_task->mmaps;
+	next_mmap = &new_task->mmaps;
+	while (pmmap != NULL)
+	{
+		mmap_info_t *new_mmap;
+		new_mmap = (mmap_info_t*) malloc(sizeof(mmap_info_t*));
+		assert(new_mmap != NULL);
+		*new_mmap = *pmmap;
+		new_mmap->next = NULL;	
+		*next_mmap = new_mmap;
+		next_mmap = &new_mmap->next;
+	}
+	mutex_release(&current_task->mmaps_lock);
+	
+	/*
+	 * Copy the current task buffers.
+	 * NOTE: This is deprecated and will be removed
+	 * soon.
+	 */
 	if (current_task->buffers != NULL)
 	{
 		buffer_t **tmp, **next, *buf;
@@ -346,6 +371,8 @@ int clone(void *stack)
 	new_task->exit_code = 0;
 	new_task->lock = MUTEX_INITIALIZER;
 	new_task->env_lock = MUTEX_INITIALIZER;
+	new_task->mmaps_lock = MUTEX_INITIALIZER;
+	new_task->mmaps = current_task->mmaps;
 	new_task->cwd = current_task->cwd;
 	new_task->argv = current_task->argv;
 	new_task->procfs_node = procfs_node;

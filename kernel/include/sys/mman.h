@@ -16,6 +16,7 @@
 #ifndef __MMAN_H__
 #define __MMAN_H__
 
+#include <sys/types.h>
 
 #define PROT_NONE			(0x00000)	/* Page cannot be accessed. */
 #define PROT_READ			(0x00001)	/* Page can be read. */

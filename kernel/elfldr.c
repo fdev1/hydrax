@@ -54,18 +54,32 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 		vaddr += 0x1000;
 		sz -= 0x1000;
 	}
+	
+	assert(sz > 0);
 
-	if (sz > 0)
+	#if 1
+	if (p_hdr->p_filesz > 0)
 	{
-		/* allocate memory for section */
+		mmap((void*) vaddr, sz, PROT_READ | PROT_WRITE | PROT_EXEC, 
+			MAP_PRIVATE, fd, p_hdr->p_offset);
+	}
+	else
+	{
 		ptr = (void*) kalloc(sz, vaddr, NULL, KALLOC_OPTN_ALIGN);
 		if (ptr == NULL)
 			return -1;
 		assert(ptr == (void*) vaddr);
+		
+		ptr = (void*) p_hdr->p_vaddr;
+		memset(ptr, 0, p_hdr->p_memsz);
 	}
+	#else
+	/* allocate memory for section */
+	ptr = (void*) kalloc(sz, vaddr, NULL, KALLOC_OPTN_ALIGN);
+	if (ptr == NULL)
+		return -1;
+	assert(ptr == (void*) vaddr);
 	
-	page_t *tmp = mmu_get_page(p_hdr->p_vaddr, 0, current_directory);
-	assert(tmp != NULL);
 	ptr = (void*) p_hdr->p_vaddr;
 	memset(ptr, 0, p_hdr->p_memsz);
 	
@@ -74,6 +88,7 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 		lseek(fd, p_hdr->p_offset, SEEK_SET);
 		read(fd, (unsigned char*) ptr, p_hdr->p_memsz);
 	}
+	#endif
 	return 0;
 }
 

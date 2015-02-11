@@ -34,20 +34,20 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	if (unlikely((flags & (MAP_SHARED | MAP_PRIVATE)) == 0))
 	{
 		current_task->errno = EINVAL;
-		return -1;
+		return NULL;
 	}
 	filedesc = get_file_descriptor(fd);
 	if (unlikely(filedesc == NULL))
 	{
 		current_task->errno = EBADF;
-		return -1;
+		return NULL;
 	}
 	
 	mmap_info = (mmap_info_t*) malloc(sizeof(mmap_info_t));
 	if (unlikely(mmap_info == NULL))
 	{
 		current_task->errno = ENOMEM;
-		return -1;
+		return NULL;
 	}
 	
 	mmap_info->addr = addr;
@@ -60,11 +60,11 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	 * space but don't map them. They will be mapped on access
 	 * by the MMU driver.
 	 */
-	ap = kalloc(len, (intptr_t) addr, NULL, KALLOC_OPTN_MMAP);
+	ap = (void*) kalloc(len, (intptr_t) addr, NULL, KALLOC_OPTN_MMAP);
 	if (unlikely(ap == NULL))
 	{
 		current_task->errno = ENOMEM;
-		return -1;
+		return NULL;
 	}
 
 	/*

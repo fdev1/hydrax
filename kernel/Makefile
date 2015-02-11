@@ -58,6 +58,7 @@ SOURCES=arch/x86/boot.o \
 	null.o \
 	zero.o \
 	system.o \
+	mman.o \
 	main.o
 
 all: kernel

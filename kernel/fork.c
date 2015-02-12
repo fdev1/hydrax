@@ -246,12 +246,13 @@ int fork(void)
 	while (pmmap != NULL)
 	{
 		mmap_info_t *new_mmap;
-		new_mmap = (mmap_info_t*) malloc(sizeof(mmap_info_t*));
+		new_mmap = (mmap_info_t*) malloc(sizeof(mmap_info_t));
 		assert(new_mmap != NULL);
 		*new_mmap = *pmmap;
 		new_mmap->next = NULL;	
 		*next_mmap = new_mmap;
 		next_mmap = &new_mmap->next;
+		pmmap = pmmap->next;
 	}
 	mutex_release(&current_task->mmaps_lock);
 	

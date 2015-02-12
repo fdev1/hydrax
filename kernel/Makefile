@@ -92,11 +92,8 @@ kernel: $(SOURCES)
 		../files/shellrc /etc/shellrc > /dev/null
 		
 	@echo -e "  MKIMAGE\thydrax.img"
-	@/sbin/debugfs -w ../hydrax.img -R "rm hydrax"
-	@/sbin/debugfs -w ../hydrax.img -R "rm initrd"
-	@/sbin/debugfs -w ../hydrax.img -R "write hydrax hydrax"
-	@/sbin/debugfs -w ../hydrax.img -R "write initrd.img initrd"
-	#-@/sbin/e2fsck -f ../hydrax.img
+	@../tools/mkimage/mkimage.sh &> /dev/null
+
 .s.o:
 	@echo -e "  AS\t\t"$<
 	@$(AS) $(ASFLAGS) -c $< -o $@
@@ -111,16 +108,16 @@ vbox: kernel
 	
 run: kernel
 	@echo -e "  QEMU\t\thydrax.img"
-	@qemu-system-i386 -m 256M -fda ../hydrax.img 2> /dev/null 
+	@qemu-system-i386 -m 256M -hda ../hydrax.img 2> /dev/null 
 
 debug: kernel
-	qemu-system-i386 -S -s -m size=256 -fda ../hydrax.img 2> /dev/null &
+	qemu-system-i386 -S -s -m size=256 -hda ../hydrax.img 2> /dev/null &
 	gdb --init-command=hydrax_gdbinit
 	
 withdebug: kernel
-	qemu-system-i386 -S -s -m 256M -fda ../hydrax.img 2> /dev/null 
+	qemu-system-i386 -S -s -m 256M -hda ../hydrax.img 2> /dev/null 
 
 kdbg: kernel
-	qemu-system-i386 -S -s -m 256M -fda ../hydrax.img 2> /dev/null &
+	qemu-system-i386 -S -s -m 256M -hda ../hydrax.img 2> /dev/null &
 	kdbg -r localhost:1234 hydrax &
 	

@@ -54,6 +54,7 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	mmap_info->len = len;
 	mmap_info->offset = off;
 	mmap_info->fd = fd;
+	mmap_info->next = NULL;
 
 	/*
 	 * Allocate the pages on the current process address

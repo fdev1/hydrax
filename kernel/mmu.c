@@ -458,8 +458,7 @@ void kfree(void* ptr)
 		mmu_frame_free(mmu_get_page(addr, 0, dir));
 		memmap_clear_page(memmap, addr);
 		addr += 0x1000;
-	}
-	
+	}	
 	
 	if (parent != NULL)
 	{
@@ -470,8 +469,10 @@ void kfree(void* ptr)
 	}
 	else
 	{
+		void *tmpmem;
+		tmpmem = *tmp;
 		*buf = (*tmp)->next;
-		free((void*) *tmp); /* free from heap */
+		free(tmpmem); /* free from heap */
 	}
 }
 

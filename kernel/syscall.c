@@ -30,6 +30,7 @@
  */
 static int syscall0(char *s)
 {
+	kprintf("fuck this\n");
 	kprintf("%s\n", s);
 	arch_dump_stack_trace();
 	return 0;

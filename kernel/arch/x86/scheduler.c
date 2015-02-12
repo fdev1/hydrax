@@ -20,6 +20,7 @@
 #include <memory.h>
 #include <unistd.h>
 #include <scheduler.h>
+#include <signal.h>
 
 /*
  * debug symbols
@@ -78,6 +79,11 @@ void double_fault(registers_t *regs)
 	schedule();
 }
 
+void stack_exception(registers_t *regs)
+{
+	raise(SIGSEGV);
+	schedule();
+}
 
 
 /*
@@ -249,12 +255,19 @@ void arch_scheduler_move_the_fucking_task_stack(task_t *new_task)
  */
 void arch_scheduler_init(void)
 {
-	register_isr(0, &divide_error);
-	register_isr(3, &breakpoint);
-	register_isr(4, &overflow);
-	register_isr(5, &bound_range_exceeded);
-	register_isr(6, &invalid_opcode);
-	register_isr(8, &double_fault);
-	register_isr(13, &general_protection_exception);	
+	register_isr(0x0, &divide_error);
+	register_isr(0x1, &general_protection_exception);	
+	register_isr(0x2, &general_protection_exception);	
+	register_isr(0x3, &breakpoint);
+	register_isr(0x4, &overflow);
+	register_isr(0x5, &bound_range_exceeded);
+	register_isr(0x6, &invalid_opcode);
+	register_isr(0x7, &general_protection_exception);	
+	register_isr(0x8, &double_fault);
+	register_isr(0x9, &general_protection_exception);	
+	register_isr(0xA, &general_protection_exception);	
+	register_isr(0xB, &general_protection_exception);	
+	register_isr(0xC, &stack_exception);
+	register_isr(0xD, &general_protection_exception);	
 }
 

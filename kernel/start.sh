@@ -4,7 +4,7 @@ SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 cd $SCRIPTPATH
 
 /usr/bin/make
-/usr/bin/qemu-system-i386 -S -s -m 256M -fda "$SCRIPTPATH/../hydrax.img" 2> /dev/null &
+/usr/bin/qemu-system-i386 -S -s -m 256M -hda "$SCRIPTPATH/../hydrax.img" 2> /dev/null &
 EMU=$!
 
 /usr/bin/gdb $@

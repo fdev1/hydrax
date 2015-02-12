@@ -92,7 +92,7 @@ kernel: $(SOURCES)
 		../files/shellrc /etc/shellrc > /dev/null
 		
 	@echo -e "  MKIMAGE\thydrax.img"
-	@../tools/mkimage/mkimage.sh &> /dev/null
+	@../tools/mkimage/mkimage.sh 
 
 .s.o:
 	@echo -e "  AS\t\t"$<

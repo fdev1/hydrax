@@ -787,6 +787,7 @@ unhandled_fault:
 	printk(7, "page_fault: present= %i write= %i user=%i resvd=%i id=%i @ 0x%x",
 		p, rw, us, rs, id, addr );
 	printk(8, "page_fault: pid: %i tid=%i cs=0x%x esp=%x", getpid(), gettid(), regs->cs, esp);
+	printk(8, "page_fault: eip: 0x%x", regs->eip);
 	printk(8, "page_fault: eip: 0x%x (%s)", regs->eip, getsym(regs->eip));
 
 	if (getpid() != 0)

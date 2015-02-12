@@ -225,6 +225,7 @@ int fork(void)
 	new_task->descriptors_info = descriptors;
 	new_task->env_lock = MUTEX_INITIALIZER;
 	new_task->mmaps_lock = MUTEX_INITIALIZER;
+	new_task->mmaps = NULL;
 	new_task->cwd = current_task->cwd;
 	new_task->argv = NULL;
 	new_task->buffers = NULL;

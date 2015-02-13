@@ -17,6 +17,7 @@
 #define __MMU_H__
 
 #include <arch/arch.h>
+#include <arch/mmu.h>
 #include <isr.h>
 #include <multiboot.h>
 #include <memmap.h>
@@ -57,23 +58,10 @@ typedef struct __buffer
 }
 buffer_t;
 
-
-
 /*
- * page entry
+ * Holds arch independent info about
+ * each page on a page directory.
  */
-typedef struct __attribute__((packed))
-{
-	uint32_t present:1;
-	uint32_t rw:1;
-	uint32_t user:1;
-	uint32_t accessed:1;
-	uint32_t dirty:1;
-	uint32_t unused:7;
-	uint32_t frame:20;
-} 
-page_t;
-
 typedef struct 
 {
 	unsigned int commited:1;
@@ -159,22 +147,12 @@ int is_page_mapped(intptr_t address);
 void mmu_dump_page(uint32_t addr);
 
 /*
- * switch the current page directory
- */
-void switch_page_directory(page_directory_t*);
-
-/*
- * enable virtual memory
- */
-void mmu_switch_to_virtual(void);
-
-/*
  * get a page entry/create it if needed
  */
 page_t *mmu_get_page(uint32_t address, int make, page_directory_t *dir);
 
 /*
- * Clone a page directoryi
+ * Clone a page directory
  */
 page_directory_t *mmu_clone_directory(page_directory_t *src, intptr_t *physical, uint32_t flags);
 

@@ -109,7 +109,15 @@ memmap_t *mmu_get_physical_map(void)
  */
 static void mmu_frame_free(page_t *page)
 {
-	assert(page->frame != 0x0);
+	/*
+	 * Even though 0 is a valid physical frame
+	 * address it is safe to say that frame 0 will
+	 * never be freed. Right now it is allocated and 
+	 * not used but we need to allocate it to the heap
+	 * at some point.
+	 */
+	if (page->frame == 0)
+		return;
 
 	mutex_wait(&frame_refs_lock);
 	if (--frame_refs[page->frame] == 0)
@@ -157,14 +165,13 @@ static uint32_t mmu_alloc_frame(uint32_t address,
 	{
 		uint32_t idx;
 		
-		mutex_busywait(&physical_memmap.lock);
+		mutex_wait(&physical_memmap.lock);
 		idx = memmap_find_free_page(&physical_memmap);
-		if ( idx == (uint32_t) -1 )
-		{
-			panic("out of frames");
-		}
+		if (idx == (uint32_t) -1)
+			panic("Out of physical memory!");
 		memmap_set_page(&physical_memmap, idx * MMU_PAGE_SIZE);
 		mutex_release(&physical_memmap.lock);
+		
 		page->present = 1;
 		page->accessed = 0;
 		page->dirty = 1;
@@ -173,7 +180,10 @@ static uint32_t mmu_alloc_frame(uint32_t address,
 		page->frame = idx;
 		assert(page_info != NULL);
 		page_info->commited = 1;
+		
+		/* mutex_wait(&frame_refs_lock); */
 		frame_refs[idx]++;
+		/* mutex_release(&frame_refs_lock); */
 		
 		return idx * MMU_PAGE_SIZE;
 	}
@@ -339,8 +349,8 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 		addr = tmp_vaddr / MMU_PAGE_SIZE;
 		page = mmu_get_page(tmp_vaddr, 1, dir);
 		assert(page != NULL);
-		page_info->cow = cow;
 		page_info = &dir->tables[addr / 1024]->pages_info[addr % 1024];
+		page_info->cow = cow;
 		page_info->noshare = ((flags & KALLOC_OPTN_NOSHARE) != 0);
 		page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
 		if (page_info->noshare == 1)
@@ -556,6 +566,15 @@ void page_fault(registers_t *regs)
 			kmmap_t *kmmap, **pkmmap;
 			file_t *f;
 
+			/*
+			 * Search a mmap that covers the current address
+			 * on the current task mmaps.
+			 * 
+			 * NOTE: Right now we just handle the fault as
+			 * "unhandled" (ie. kill the faulting process) but
+			 * we can probably just panic since a missing mmap
+			 * would indicate a bug.
+			 */
 			mutex_wait(&current_task->mmaps_lock);
 			mmap = current_task->mmaps;
 			while (mmap != NULL)
@@ -565,8 +584,7 @@ void page_fault(registers_t *regs)
 					break;
 				mmap = mmap->next;
 			}
-			mutex_release(&current_task->mmaps_lock);
-			
+			mutex_release(&current_task->mmaps_lock);			
 			if (unlikely(mmap == NULL))
 				goto unhandled_fault;
 			
@@ -585,110 +603,88 @@ void page_fault(registers_t *regs)
 			
 			if (kmmap != NULL)	/* if there's an existing mapping... */
 			{
-				off_t f_offset;
-				intptr_t m_vaddr, c_vaddr;
-				page_t *c_page, *m_page;
-				page_info_t *c_page_info, *m_page_info;
-				const uint32_t c_addr = (intptr_t) mmap->addr / MMU_PAGE_SIZE;
-				uint32_t c_indx = addr / 1024;
-				uint32_t c_offs = addr % 1024;
-				const uint32_t m_addr = (intptr_t) kmmap->mmap->addr / MMU_PAGE_SIZE;
-				uint32_t m_indx = addr / 1024;
-				uint32_t m_offs = addr % 1024;
-				
-				f_offset = mmap->offset;
-				c_page = &current_directory->tables[c_indx]->pages[c_offs];
-				c_page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
-				m_page = &kmmap->directory->tables[m_indx]->pages[c_offs];
-				m_page_info = &kmmap->directory->tables[m_indx]->pages_info[c_offs];
+				page_t *m_page;
+				page_info_t *m_page_info;
+
+				/*
+				 * Calculate the address and location of the page
+				 * structure for the master mapping.
+				 */
+				const intptr_t m_address = 
+					(((intptr_t) kmmap->mmap->addr) + (address - (intptr_t) mmap->addr)) &
+					~0xFFF;
+				const intptr_t m_addr = m_address / MMU_PAGE_SIZE;
+				const uint32_t m_indx = m_addr / 1024;
+				const uint32_t m_offs = m_addr % 1024;
 				
 				/*
-				 * Copy all the mappings from the master
-				 * mapping directory.
+				 * Get the page and page_info structure for the
+				 * master mapping
 				 */
-				c_vaddr = (intptr_t) mmap->addr;
-				m_vaddr = (intptr_t) kmmap->mmap->addr;
-				while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
+				m_page = &kmmap->directory->tables[m_indx]->pages[m_offs];
+				m_page_info = &kmmap->directory->tables[m_indx]->pages_info[m_offs];
+				
+				/*
+				 * If the page has not been mapped on the master
+				 * mapping then map it.
+				 */
+				if (unlikely(m_page->present == 0))
+				{
+					address &= ~0xFFF;
+					mmu_alloc_frame(address, kmmap->directory, 
+						ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+					vfs_read(f->node, mmap->offset + (address - (intptr_t) mmap->addr), 
+						MMU_PAGE_SIZE, (uint8_t*) address);					
+				}
+				
+				/*
+				 * If the current page is not the master page
+				 * we set the current page to reference the master
+				 * page
+				 */
+				if (m_page != page)
 				{
 					mutex_wait(&frame_refs_lock);
 					frame_refs[m_page->frame]++;
 					mutex_release(&frame_refs_lock);
 
 					/*
-					 * If the master page is writeable then
-					 * make mark it as read only and clear the
-					 * commited flag.
-					 * 
-					 * NOTE: This won't be a problem with any
-					 * of our programs yet but it means that if
-					 * the 1st file to map the file modified we
-					 * get the modified version even if it's not
-					 * or will never be flushed to disk.
-					 */
+					* If the master page is writeable then
+					* make mark it as read only and clear the
+					* commited flag.
+					* 
+					* NOTE: This won't be a problem with any
+					* of our programs yet but it means that if
+					* the 1st file to map the file modified we
+					* get the modified version even if it's not
+					* or will never be flushed to disk.
+					*/
 					if (m_page->rw == 1)
 					{
 						m_page->rw = 0;
 						m_page_info->commited = 0;
 					}
 					
-					*c_page = *m_page;
-					*c_page_info = *m_page_info;	
-					arch_invalidate_page(c_vaddr);
-					c_vaddr += MMU_PAGE_SIZE;
-					m_vaddr += MMU_PAGE_SIZE;
-					f_offset += MMU_PAGE_SIZE;
+					*page = *m_page;
+					*page_info = *m_page_info;	
+					arch_invalidate_page(address);
 					
-					c_page++;
-					m_page++;
-					c_page_info++;
-					m_page_info++;
-					
-					if (unlikely(++c_offs == 1024))
-					{
-						c_offs = 0;
-						c_indx++;
-						c_page = &current_directory->tables[c_indx]->pages[c_offs];
-						c_page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
-					}
-					if (unlikely(++m_offs == 1024))
-					{
-						m_offs = 0;
-						m_indx++;
-						m_page = &kmmap->directory->tables[m_indx]->pages[c_offs];
-						m_page_info = &kmmap->directory->tables[m_indx]->pages_info[c_offs];
-					}
-				}
-				
-				/*
-				 * If the length of this mapping is greater
-				 * than the existing mapping we map all the mappings
-				 * from the master mapping to our address space, then
-				 * map the remaining pages and replace the current
-				 * master mapping info with ours.
-				 */
-				if (mmap->len > kmmap->mmap->len)
-				{
-					while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
-					{
-						mmu_alloc_frame(c_vaddr, current_directory, 
-							ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
-						vfs_read(f->node, f_offset, MMU_PAGE_SIZE, (uint8_t*) c_vaddr);
-						c_vaddr += MMU_PAGE_SIZE;
-						f_offset += MMU_PAGE_SIZE;
-					}
-					kmmap->mmap = mmap;
+					/*
+					* If the length of this mapping is greater
+					* than the existing mapping we replace the current
+					* master mapping info with ours.
+					* 
+					* TODO: We need to copy all the pages that are
+					* mapped on the master mapping first, otherwise
+					* any other process mapping will get a new physical
+					* page
+					*/
+					if (mmap->len > kmmap->mmap->len)
+						kmmap->mmap = mmap;
 				}
 			}
 			else	/* if there's no existing mapping... */
 			{
-				off_t f_offset;
-				page_t *c_page;
-				page_info_t *c_page_info, *m_page_info;
-				uint32_t c_vaddr = (intptr_t) mmap->addr;
-				const uint32_t c_addr = c_vaddr / MMU_PAGE_SIZE;
-				const uint32_t c_indx = c_addr / 1024;
-				const uint32_t c_offs = c_addr % 1024;
-				
 				kmmap = (kmmap_t*) malloc(sizeof(kmmap_t));
 				if (unlikely(kmmap == NULL))
 				{
@@ -700,21 +696,12 @@ void page_fault(registers_t *regs)
 				kmmap->node = f->node;
 				kmmap->next = NULL;
 				
-				assert(current_directory->tables[c_indx] != NULL);
-				
-				page = &current_directory->tables[c_indx]->pages[c_offs];
-				page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
-				f_offset = mmap->offset;
-				//c_vaddr = (intptr_t) mmap->addr;
-				
-				while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
-				{
-					mmu_alloc_frame(c_vaddr, current_directory, 
-						ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
-					vfs_read(f->node, f_offset, MMU_PAGE_SIZE, (uint8_t*) c_vaddr);
-					c_vaddr += MMU_PAGE_SIZE;
-					f_offset += MMU_PAGE_SIZE;
-				}
+				address &= ~0xFFF;
+				mmu_alloc_frame(address, current_directory, 
+					ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+				vfs_read(f->node, mmap->offset + (address - (intptr_t) mmap->addr), 
+					    MMU_PAGE_SIZE, (uint8_t*) address);
+				arch_invalidate_page(address);
 					
 				/*
 				 * Record the mapping on the kernel list
@@ -726,15 +713,16 @@ void page_fault(registers_t *regs)
 			}			
 
 			mutex_release(&kmmaps_lock);
-			return;
+			if (rw == 0)
+				return;
 		}
 		/*
 		 * The page is mapped but not commited
 		 * for write access
 		 */
-		else if (rw != 0)
+		if (rw != 0)
 		{
-			mutex_busywait(&frame_refs_lock);
+			mutex_wait(&frame_refs_lock);
 			if (frame_refs[page->frame] == 1)
 			{
 				page->rw = 1;
@@ -761,6 +749,7 @@ void page_fault(registers_t *regs)
 				return;
 			}
 		}
+		return;
 	}
 	
 unhandled_fault:
@@ -779,8 +768,8 @@ unhandled_fault:
 		schedule();
 	}
 
-	mmu_dump_page( addr );
-	panic("PAGE_FAULT");
+	mmu_dump_page(addr);
+	panic("Page Fault!");
 }
 
 /*
@@ -955,6 +944,9 @@ static inline page_table_t *mmu_clone_table(
 		}
 		else
 		{
+			/*
+			 * TODO: don't double copy
+			 */
 			page_t tmp;
 		
 			/*
@@ -965,7 +957,7 @@ static inline page_table_t *mmu_clone_table(
 			tmp = src->pages[i];
 			tmp.frame = (*table)->pages[i].frame;
 			tmp.accessed = 0;
-			tmp.dirty = 1;
+			tmp.dirty = 0;
 			(*table)->pages[i] = tmp;
 			(*table)->pages_info[i] = src->pages_info[i];
 			(*table)->pages_info[i].commited = 1;
@@ -981,7 +973,6 @@ static inline page_table_t *mmu_clone_table(
 
 /*
  * clones a page directory.
- *
  */
 page_directory_t *mmu_clone_directory(
 	page_directory_t *src, intptr_t *phys, uint32_t flags)

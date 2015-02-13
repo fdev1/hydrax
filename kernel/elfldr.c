@@ -50,14 +50,15 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 			break;
 		if (!is_page_mapped(vaddr))
 			break;
-			
+		
+		assert(0);
 		vaddr += 0x1000;
 		sz -= 0x1000;
 	}
 	
 	assert(sz > 0);
 
-	#if 0
+	#if 1
 	if (p_hdr->p_filesz > 0)
 	{
 		mmap((void*) vaddr, sz, PROT_READ | PROT_WRITE | PROT_EXEC, 
@@ -125,16 +126,18 @@ intptr_t elf_load(int fd)
 
 	/* read program headers */
 	read(fd, (unsigned char*) p_hdr, sizeof(Elf32_Phdr) * elf_hdr->e_phnum);
-	//vfs_read(fsnode, elf_hdr->e_phoff, 
-	//	sizeof(Elf32_Phdr) * elf_hdr->e_phnum, (unsigned char*) p_hdr);
 
 	/*
 	 * load all section in order
 	 */
 	for (j = 0; j < elf_hdr->e_phnum; j++)
+	{
 		if (p_hdr[j].p_type == PT_LOAD && p_hdr[j].p_memsz > 0)
+		{
 			if (elf_load_section(&p_hdr[j], fd) == -1)
 				printk(3, "elf_load: error loading section!");
+		}
+	}
 
 	entry = elf_hdr->e_entry;
 	free(p_hdr);

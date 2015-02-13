@@ -75,14 +75,18 @@
 		"mov %%cr0, %%eax;"				\
 		"and $0x7ffeffff, %%eax;"		\
 		"mov %%eax, %%cr0;"				\
-		"mov $0x400, %%eax;"			\
-		"nop;"						\
-		"nop;"						\
+		"mov $0x100, %%eax;"			\
 		"1:"							\
-		"mov (%1), %%ebx;"				\
-		"mov %%ebx, (%0);"				\
-		"add $0x4, %0;"				\
-		"add $0x4, %1;"				\
+		"mov 0x0(%1), %%ebx;"			\
+		"mov %%ebx, 0x0(%0);"			\
+		"mov 0x4(%1), %%ebx;"			\
+		"mov %%ebx, 0x4(%0);"			\
+		"mov 0x8(%1), %%ebx;"			\
+		"mov %%ebx, 0x8(%0);"			\
+		"mov 0xC(%1), %%ebx;"			\
+		"mov %%ebx, 0xC(%0);"			\
+		"add $0x10, %0;"				\
+		"add $0x10, %1;"				\
 		"dec %%eax;"					\
 		"jnz 1b;"						\
 		"mov %%cr0, %%eax;"				\
@@ -586,14 +590,15 @@ void page_fault(registers_t *regs)
 	if (page != NULL && page_info->commited == 0)
 	{
 		/*
-		 * The page is mapped to a file
+		 * The page is mapped to a file that has not been
+		 * mapped to a physical frame.
 		 * 
 		 * TODO: For now the 1st access to a mmaped file
 		 * will cause the whole file to be read into physical
 		 * memory.
 		 * 
 		 */
-		if (page_info->mmap == 1)
+		if (page_info->mmap == 1 && page->frame == 0)
 		{
 			mmap_info_t *mmap;
 			kmmap_t *kmmap, **pkmmap;
@@ -656,13 +661,35 @@ void page_fault(registers_t *regs)
 					mutex_wait(&frame_refs_lock);
 					frame_refs[m_page->frame]++;
 					mutex_release(&frame_refs_lock);
-							
-					*c_page++ = *m_page++;
-					*c_page_info++ = *m_page_info++;	
+
+					/*
+					 * If the master page is writeable then
+					 * make mark it as read only and clear the
+					 * commited flag.
+					 * 
+					 * NOTE: This won't be a problem with any
+					 * of our programs yet but it means that if
+					 * the 1st file to map the file modified we
+					 * get the modified version even if it's not
+					 * or will never be flushed to disk.
+					 */
+					if (m_page->rw == 1)
+					{
+						m_page->rw = 0;
+						m_page_info->commited = 0;
+					}
+					
+					*c_page = *m_page;
+					*c_page_info = *m_page_info;	
 					arch_invalidate_page(c_vaddr);
 					c_vaddr += MMU_PAGE_SIZE;
 					m_vaddr += MMU_PAGE_SIZE;
 					f_offset += MMU_PAGE_SIZE;
+					
+					c_page++;
+					m_page++;
+					c_page_info++;
+					m_page_info++;
 					
 					if (unlikely(++c_offs == 1024))
 					{
@@ -705,10 +732,10 @@ void page_fault(registers_t *regs)
 				off_t f_offset;
 				page_t *c_page;
 				page_info_t *c_page_info, *m_page_info;
-				uint32_t c_vaddr;
-				const uint32_t c_addr = (intptr_t) mmap->addr / MMU_PAGE_SIZE;
-				const uint32_t c_indx = addr / 1024;
-				const uint32_t c_offs = addr % 1024;
+				uint32_t c_vaddr = (intptr_t) mmap->addr;
+				const uint32_t c_addr = c_vaddr / MMU_PAGE_SIZE;
+				const uint32_t c_indx = c_addr / 1024;
+				const uint32_t c_offs = c_addr % 1024;
 				
 				kmmap = (kmmap_t*) malloc(sizeof(kmmap_t));
 				if (unlikely(kmmap == NULL))
@@ -719,14 +746,14 @@ void page_fault(registers_t *regs)
 				kmmap->mmap = mmap;
 				kmmap->directory = current_directory;
 				kmmap->node = f->node;
-				kmmap->next;
+				kmmap->next = NULL;
 				
 				assert(current_directory->tables[c_indx] != NULL);
 				
 				page = &current_directory->tables[c_indx]->pages[c_offs];
 				page_info = &current_directory->tables[c_indx]->pages_info[c_offs];
 				f_offset = mmap->offset;
-				c_vaddr = (intptr_t) mmap->addr;
+				//c_vaddr = (intptr_t) mmap->addr;
 				
 				while (c_vaddr < (intptr_t) mmap->addr + mmap->len)
 				{
@@ -737,6 +764,9 @@ void page_fault(registers_t *regs)
 					f_offset += MMU_PAGE_SIZE;
 				}
 					
+				/*
+				 * Record the mapping on the kernel list
+				 */
 				pkmmap = &kmmaps;
 				while (*pkmmap != NULL)
 					pkmmap = &(*pkmmap)->next;

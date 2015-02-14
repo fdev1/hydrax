@@ -32,9 +32,6 @@
 #include <signal.h>
 #include <io.h>
 
-#define MMU_CR0_PG				(0x0000)
-#define MMU_CR4_PG				(0x0000)
-
 /*
  * These are used to enable debug output
  */
@@ -142,8 +139,7 @@ static void mmu_frame_free(page_t *page)
  * mapped to a physical address it return 0x0, otherwise it returns
  * the physical address of the page
  */
-static uint32_t mmu_alloc_frame(uint32_t address, 
-	page_directory_t *directory, unsigned int flags)
+static uint32_t mmu_alloc_frame(uint32_t address, page_directory_t *directory)
 {
 	const uint32_t addr = address / MMU_PAGE_SIZE;
 	const uint32_t indx = addr / 1024;
@@ -174,11 +170,8 @@ static uint32_t mmu_alloc_frame(uint32_t address,
 		
 		page->present = 1;
 		page->accessed = 0;
-		page->dirty = 1;
-		page->rw = (flags & ALLOC_FRAME_WRITEABLE) ? 1 : 0;
-		page->user = (flags & ALLOC_FRAME_KERNEL) ? 0 : 1;
+		page->dirty = 0;
 		page->frame = idx;
-		assert(page_info != NULL);
 		page_info->commited = 1;
 		
 		/*
@@ -197,12 +190,13 @@ static uint32_t mmu_alloc_frame(uint32_t address,
  * Allocate a page of virtual memory to the specified
  * directory.
  */
-page_t *mmu_alloc_page(page_directory_t *dir, intptr_t address, unsigned int flags)
+page_t *mmu_alloc_page(page_directory_t *dir, 
+	intptr_t vaddr, unsigned int flags, uint32_t *phys)
 {
 	page_t *page;
 	page_info_t *page_info;
 	
-	address /= MMU_PAGE_SIZE;
+	const uint32_t address = vaddr / MMU_PAGE_SIZE;
 	const uint32_t table_idx = address / 1024;
 	const uint32_t page_idx = address % 1024;
 	
@@ -248,7 +242,45 @@ page_t *mmu_alloc_page(page_directory_t *dir, intptr_t address, unsigned int fla
 	if (unlikely(page_info->noshare == 1 && dir->tables[table_idx]->noshare != 1))
 		dir->tables[table_idx]->noshare = 1;
 	
+	if (unlikely((flags & ALLOC_FRAME_ALLOC_PHYS) != 0))
+	{
+		uint32_t phmem;
+		if (unlikely(phys == NULL))
+			phys = &phmem;
+		*phys = mmu_alloc_frame(vaddr, dir);
+	}
+	
 	return page;
+}
+
+/*
+ * gets a page structure from the specified directory
+ */
+page_t *mmu_get_page(uint32_t address, int make, page_directory_t *dir)
+{
+	uint32_t table_idx;
+	address /= MMU_PAGE_SIZE;
+	table_idx = address / 1024;
+
+	if (dir->tables[table_idx])
+	{
+		return &dir->tables[table_idx]->pages[address % 1024];
+	}
+	else if (make)
+	{
+		uint32_t tmp;
+		dir->tables[table_idx] = (page_table_t*) kalloc(sizeof(page_table_t), 
+			NULL, &tmp, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
+		if (dir->tables[table_idx] == NULL)
+			return NULL;
+		memset(dir->tables[table_idx], 0, sizeof(page_table_t));
+		dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US.
+		return &dir->tables[table_idx]->pages[address % 1024];
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 /*
@@ -324,6 +356,9 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	intptr_t tmp_vaddr;
 	buffer_t **buffers;
 	uint32_t physmem;
+	unsigned int pflags;
+	
+	pflags = 0;
 	
 	if (phys == NULL)
 		phys = &physmem;
@@ -345,12 +380,14 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 		memmap = &kernel_memmap;
 		dir = &kernel_directory;
 		buffers = &kernel_buffers;
+		pflags |= ALLOC_FRAME_KERNEL;
 	}
 	else
 	{
 		memmap = current_memmap;
 		dir = current_directory;
 		buffers = &current_task->buffers;
+		pflags |= ALLOC_FRAME_USER;
 	}
 	
 	/*
@@ -390,34 +427,35 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 
 	
 	const uint32_t cow = (flags & KALLOC_OPTN_NOCOW) ? 0 : 1;
-	unsigned int pflags = ALLOC_FRAME_MKTABLE;
 	
+	pflags = ALLOC_FRAME_MKTABLE;
+
 	if (cow)
 		pflags |= ALLOC_FRAME_COW;
 	if ((flags & KALLOC_OPTN_NOSHARE) != 0)
 		pflags |= ALLOC_FRAME_NOSHARE;
 	if ((flags & KALLOC_OPTN_MMAP) != 0)
 		pflags |= ALLOC_FRAME_MMAP;
+	else pflags |= ALLOC_FRAME_ALLOC_PHYS;
+	
+	/*
+	 * TODO: We need to make sure that anyone kalloc'ing
+	 * anything that needs write access passes the 
+	 * KALLOC_OPTN_WRITEABLE! For now we just make
+	 * everything writeable.
+	 */
+	/* if ((flags & KALLOC_OPTN_WRITEABLE) != 0) */
+		pflags |= ALLOC_FRAME_WRITEABLE;
 		
 	/*
 	 * Allocate and map all pages requested.
 	 */
-	page = mmu_alloc_page(dir, vaddr, pflags);
-	if (page == NULL)
-		asm("nop");
-	
-	assert(page != NULL);
-	if (likely((flags & KALLOC_OPTN_MMAP) == 0))
-		*phys = mmu_alloc_frame(vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
-	else
-		*phys = 0;
-	
+	page = mmu_alloc_page(dir, vaddr, pflags, phys);
+	assert(page != NULL);	
 	for (tmp_vaddr = vaddr + 0x1000; tmp_vaddr < vaddr + sz; tmp_vaddr += 0x1000)
 	{
-		page = mmu_alloc_page(dir, tmp_vaddr, pflags);
+		page = mmu_alloc_page(dir, tmp_vaddr, pflags, NULL);
 		assert(page != NULL);
-		if (likely((flags & KALLOC_OPTN_MMAP) == 0))
-			mmu_alloc_frame(tmp_vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
 	}
 
 	if ((flags & KALLOC_OPTN_NOFREE) == 0 && kheap.len)
@@ -551,36 +589,6 @@ int is_page_mapped(intptr_t address)
 	if (p == NULL || p->frame == NULL)
 		return 0;
 	return 1;		
-}
-
-/*
- * gets a page structure from the specified directory
- */
-page_t *mmu_get_page(uint32_t address, int make, page_directory_t *dir)
-{
-	uint32_t table_idx;
-	address /= MMU_PAGE_SIZE;
-	table_idx = address / 1024;
-
-	if (dir->tables[table_idx])
-	{
-		return &dir->tables[table_idx]->pages[address % 1024];
-	}
-	else if (make)
-	{
-		uint32_t tmp;
-		dir->tables[table_idx] = (page_table_t*) kalloc(sizeof(page_table_t), 
-			NULL, &tmp, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
-		if (dir->tables[table_idx] == NULL)
-			return NULL;
-		memset(dir->tables[table_idx], 0, sizeof(page_table_t));
-		dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US.
-		return &dir->tables[table_idx]->pages[address % 1024];
-	}
-	else
-	{
-		return NULL;
-	}
 }
 
 /*
@@ -763,10 +771,10 @@ void page_fault(registers_t *regs)
 				if (unlikely(m_page->present == 0))
 				{
 					address &= ~0xFFF;
-					mmu_alloc_frame(address, kmmap->directory, 
-						ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+					mmu_alloc_frame(address, kmmap->directory);
 					vfs_read(f->node, mmap->offset + (address - (intptr_t) mmap->addr), 
-						MMU_PAGE_SIZE, (uint8_t*) address);					
+						MMU_PAGE_SIZE, (uint8_t*) address);
+					/* TODO: Mark the page as clean */
 				}
 				
 				/*
@@ -830,8 +838,7 @@ void page_fault(registers_t *regs)
 				kmmap->next = NULL;
 				
 				address &= ~0xFFF;
-				mmu_alloc_frame(address, current_directory, 
-					ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+				mmu_alloc_frame(address, current_directory);
 				vfs_read(f->node, mmap->offset + (address - (intptr_t) mmap->addr), 
 					    MMU_PAGE_SIZE, (uint8_t*) address);
 				arch_invalidate_page(address);
@@ -852,6 +859,9 @@ void page_fault(registers_t *regs)
 		/*
 		 * The page is mapped but not commited
 		 * for write access
+		 * 
+		 * FIXME: We need to release frame_refs_lock
+		 * before we call mmu_alloc_frame().
 		 */
 		if (rw != 0)
 		{
@@ -869,9 +879,9 @@ void page_fault(registers_t *regs)
 				uint32_t frame;
 				frame = page->frame;
 				page->frame = 0;
-				mmu_alloc_frame(address, current_directory, 
-					ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+				mmu_alloc_frame(address, current_directory);
 				assert(page->frame != NULL);
+				page->rw = 1;
 				frame_refs[frame]--;
 				
 				copy_physical_page(
@@ -982,23 +992,24 @@ void mmu_init(multiboot_header_t *p_mboot)
 	 * Create all kernel space pages
 	 */
 	for (i = 0; i < end_of_kernel; i += MMU_PAGE_SIZE)
-		mmu_get_page(i, 1, &kernel_directory);
+	{
+		if (unlikely(i >= ucode && i <= data))
+		{
+			mmu_alloc_page(&kernel_directory, i, 
+				ALLOC_FRAME_MKTABLE | ALLOC_FRAME_USER, NULL);
+		}
+		else
+		{
+			mmu_alloc_page(&kernel_directory, i, 
+				ALLOC_FRAME_MKTABLE | ALLOC_FRAME_KERNEL | ALLOC_FRAME_WRITEABLE, NULL);
+		}
+	}
 
 	/*
 	 * Map all used kernel pages
 	 */
 	for (i = 0; i < placement_address; i += MMU_PAGE_SIZE)
-	{
-		if (unlikely(i >= ucode && i <= data))
-		{
-			mmu_alloc_frame(i, &kernel_directory, ALLOC_FRAME_USER);			
-		}
-		else
-		{
-			mmu_alloc_frame(i, &kernel_directory, 
-				ALLOC_FRAME_KERNEL | ALLOC_FRAME_WRITEABLE);
-		}
-	}
+		mmu_alloc_frame(i, &kernel_directory);			
 
 	/*
 	 * On the kernel memmap, mark everything that is used
@@ -1085,8 +1096,7 @@ static inline page_table_t *mmu_clone_table(
 			/*
 			* allocate a physical page
 			*/
-			mmu_alloc_frame(vaddr, directory,
-				ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
+			mmu_alloc_frame(vaddr, directory);
 			tmp = src->pages[i];
 			tmp.frame = (*table)->pages[i].frame;
 			tmp.accessed = 0;
@@ -1115,8 +1125,8 @@ page_directory_t *mmu_clone_directory(
 	page_directory_t *dir;
 	
 	/* allocate page directory in kernel memory */
-	dir = (page_directory_t*) kalloc(sizeof(page_directory_t),
-		NULL, &physmem, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
+	dir = (page_directory_t*) kalloc(sizeof(page_directory_t), NULL, &physmem, 
+		KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL | KALLOC_OPTN_WRITEABLE);
 	if (unlikely(dir == NULL))
 		return NULL;
 	memset(dir, 0, sizeof(page_directory_t));

@@ -38,7 +38,8 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	void *ap;
 	file_t *filedesc;
 	mmap_info_t *mmap_info, **tmp;
-
+	unsigned int kflags;
+	
 	if (unlikely((flags & (MAP_SHARED | MAP_PRIVATE)) == 0))
 	{
 		current_task->errno = EINVAL;
@@ -65,13 +66,23 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	mmap_info->flags = flags;
 	mmap_info->fd = fd;
 	mmap_info->next = NULL;
+	
+	kflags = KALLOC_OPTN_MMAP;
+	if ((prot & PROT_WRITE) != 0)
+		kflags |= KALLOC_OPTN_WRITEABLE;
+	/* if (prot & PROT_EXEC) */
+	/* if (prot & PROT_READ) */
+	/* if (prot & PROT_NONE) what?? */
+	if (flags & MAP_PRIVATE)
+		kflags |= KALLOC_OPTN_NOCOW;
+		
 
 	/*
 	 * Allocate the pages on the current process address
 	 * space but don't map them. They will be mapped on access
 	 * by the MMU driver.
 	 */
-	ap = (void*) kalloc(len, (intptr_t) addr, NULL, KALLOC_OPTN_MMAP);
+	ap = (void*) kalloc(len, (intptr_t) addr, NULL, kflags);
 	if (unlikely(ap == NULL))
 	{
 		current_task->errno = ENOMEM;

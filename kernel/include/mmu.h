@@ -37,6 +37,9 @@
 #define KALLOC_OPTN_MMAP			(0x0200)	/* memory used by mmap */
 #define KALLOC_OPTN_CONSEC		(0x0400)	/* allocate consecutive physical memory */
 
+/*
+ * mmu_clone_directory options
+ */
 #define CLONE_COPY				(0x00)
 #define CLONE_SHARE				(0x01)
 #define CLONE_COW				(0x02)
@@ -45,12 +48,13 @@
  * mmu_alloc_frame flags
  */
 #define ALLOC_FRAME_USER			(0x0000)
-#define ALLOC_FRAME_KERNEL		(0x0001)
-#define ALLOC_FRAME_WRITEABLE		(0x0002)
+#define ALLOC_FRAME_KERNEL		(0x0001)	/* allocate page on the kernel directory */
+#define ALLOC_FRAME_WRITEABLE		(0x0002)	/* page is writeable */
 #define ALLOC_FRAME_MKTABLE		(0x0004)	/* create page table if necessary */
-#define ALLOC_FRAME_COW			(0x0008)
+#define ALLOC_FRAME_COW			(0x0008)	/* allow COW when cloning */
 #define ALLOC_FRAME_NOSHARE		(0x0010)	/* do not share with threads */
 #define ALLOC_FRAME_MMAP			(0x0020)	/* mmaped */
+#define ALLOC_FRAME_ALLOC_PHYS	(0x0040)	/* allocate a physical page and map it */
 
 /*
  * Structure used to track allocated pages.

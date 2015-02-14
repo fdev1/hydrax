@@ -56,7 +56,7 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 	if (p_hdr->p_filesz > 0)
 	{
 		mmap((void*) vaddr, sz, PROT_READ | PROT_WRITE | PROT_EXEC, 
-			MAP_PRIVATE, fd, p_hdr->p_offset);
+			MAP_SHARED, fd, p_hdr->p_offset);
 	}
 	else
 	{

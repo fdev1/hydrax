@@ -21,6 +21,7 @@
 #include <kheap.h>
 #include <syscall.h>
 #include <memory.h>
+#include <unistd.h>
 
 /*
  * load a program segment.
@@ -36,13 +37,7 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 	sz = p_hdr->p_memsz + (p_hdr->p_vaddr - vaddr);
 
 	/*
-	 * Since the two elf sections may overlap the same
-	 * page we just request the buffer allocated at the next
-	 * physical page. Since all sections are going to be mapped
-	 * until the task is killed it shouldn't be a problem.
-	 *
-	 * We're assuming that the sections are ordered from lower
-	 * to higher addresses. I don't know if this is always true
+	 * This can be deleted
 	 */
 	while (1)
 	{
@@ -58,7 +53,6 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 	
 	assert(sz > 0);
 
-	#if 1
 	if (p_hdr->p_filesz > 0)
 	{
 		mmap((void*) vaddr, sz, PROT_READ | PROT_WRITE | PROT_EXEC, 
@@ -74,22 +68,6 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 		ptr = (void*) p_hdr->p_vaddr;
 		memset(ptr, 0, p_hdr->p_memsz);
 	}
-	#else
-	/* allocate memory for section */
-	ptr = (void*) kalloc(sz, vaddr, NULL, KALLOC_OPTN_ALIGN);
-	if (ptr == NULL)
-		return -1;
-	assert(ptr == (void*) vaddr);
-	
-	ptr = (void*) p_hdr->p_vaddr;
-	memset(ptr, 0, p_hdr->p_memsz);
-	
-	if (p_hdr->p_filesz > 0)
-	{
-		lseek(fd, p_hdr->p_offset, SEEK_SET);
-		read(fd, (unsigned char*) ptr, p_hdr->p_memsz);
-	}
-	#endif
 	return 0;
 }
 

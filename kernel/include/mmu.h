@@ -35,6 +35,7 @@
 #define KALLOC_OPTN_NOCOW		(0x0080)  /* no commit on write */
 #define KALLOC_OPTN_NOSHARE		(0x0100)	/* do not share with child threads */
 #define KALLOC_OPTN_MMAP			(0x0200)	/* memory used by mmap */
+#define KALLOC_OPTN_CONSEC		(0x0400)	/* allocate consecutive physical memory */
 
 #define CLONE_COPY				(0x00)
 #define CLONE_SHARE				(0x01)
@@ -43,9 +44,13 @@
 /*
  * mmu_alloc_frame flags
  */
-#define ALLOC_FRAME_USER			(0x00)
-#define ALLOC_FRAME_KERNEL		(0x01)
-#define ALLOC_FRAME_WRITEABLE		(0x02)
+#define ALLOC_FRAME_USER			(0x0000)
+#define ALLOC_FRAME_KERNEL		(0x0001)
+#define ALLOC_FRAME_WRITEABLE		(0x0002)
+#define ALLOC_FRAME_MKTABLE		(0x0004)	/* create page table if necessary */
+#define ALLOC_FRAME_COW			(0x0008)
+#define ALLOC_FRAME_NOSHARE		(0x0010)	/* do not share with threads */
+#define ALLOC_FRAME_MMAP			(0x0020)	/* mmaped */
 
 /*
  * Structure used to track allocated pages.

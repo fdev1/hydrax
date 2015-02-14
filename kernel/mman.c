@@ -23,6 +23,14 @@
 #include <scheduler.h>
 
 /*
+ * Open a shared memory file
+ */
+int shm_open(const char *a, int b, mode_t c)
+{
+	return ENOSYS;
+}
+
+/*
  * Map a file to the current address space
  */
 void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
@@ -53,6 +61,8 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	mmap_info->addr = addr;
 	mmap_info->len = len;
 	mmap_info->offset = off;
+	mmap_info->prot = prot;
+	mmap_info->flags = flags;
 	mmap_info->fd = fd;
 	mmap_info->next = NULL;
 

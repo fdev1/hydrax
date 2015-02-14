@@ -81,6 +81,8 @@ typedef struct __mmap_info
 {
 	void *addr;
 	size_t len;
+	int flags;
+	int prot;
 	off_t offset;
 	int fd;
 	struct __mmap_info *next;

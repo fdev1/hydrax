@@ -181,12 +181,74 @@ static uint32_t mmu_alloc_frame(uint32_t address,
 		assert(page_info != NULL);
 		page_info->commited = 1;
 		
+		/*
+		 * FIXME: At some point this is being called with
+		 * the frame_refs_lock mutex held.
+		 */
 		/* mutex_wait(&frame_refs_lock); */
 		frame_refs[idx]++;
 		/* mutex_release(&frame_refs_lock); */
 		
 		return idx * MMU_PAGE_SIZE;
 	}
+}
+
+/*
+ * Allocate a page of virtual memory to the specified
+ * directory.
+ */
+page_t *mmu_alloc_page(page_directory_t *dir, intptr_t address, unsigned int flags)
+{
+	page_t *page;
+	page_info_t *page_info;
+	
+	address /= MMU_PAGE_SIZE;
+	const uint32_t table_idx = address / 1024;
+	const uint32_t page_idx = address % 1024;
+	
+	/*
+	 * if the page table does not exist and the MKTABLE option
+	 * was specified then create a table
+	 */
+	if (unlikely(dir->tables[table_idx] == NULL))
+	{
+		if (likely((flags & ALLOC_FRAME_MKTABLE) != 0))
+		{
+			uint32_t tmp;
+			dir->tables[table_idx] = (page_table_t*) kalloc(sizeof(page_table_t), 
+				NULL, &tmp, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
+			if (unlikely(dir->tables[table_idx] == NULL))
+			{
+				if (current_task != NULL)
+					current_task->errno = ENOMEM;
+				return NULL;
+			}
+			memset(dir->tables[table_idx], 0, sizeof(page_table_t));
+			dir->tablesPhysical[table_idx] = tmp | 0x7; /* PRESENT, RW, US.*/
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+
+	page = &dir->tables[table_idx]->pages[page_idx];
+	page_info = &dir->tables[table_idx]->pages_info[page_idx];
+	page->rw = (flags & ALLOC_FRAME_WRITEABLE) ? 1 : 0;
+	page->user = (flags & ALLOC_FRAME_KERNEL) ? 0 : 1;
+	page_info->cow = ((flags & ALLOC_FRAME_COW) != 0);
+	page_info->noshare = ((flags & ALLOC_FRAME_NOSHARE) != 0);
+	page_info->mmap = ((flags & ALLOC_FRAME_MMAP) != 0);
+	
+	/*
+	 * If a page is private then it's table needs to be private too,
+	 * otherwise the clone function will assume the entire table is
+	 * shared without looking at the pages.
+	 */
+	if (unlikely(page_info->noshare == 1 && dir->tables[table_idx]->noshare != 1))
+		dir->tables[table_idx]->noshare = 1;
+	
+	return page;
 }
 
 /*
@@ -249,15 +311,19 @@ static intptr_t kalloc_premmu(uint32_t sz, uint32_t virt, uint32_t *phys, uint32
  * as a memory mapped file page but it is not mapped. The mapping will happen
  * when the page is accessed.
  * 
+ * NOTE: If vaddr is not NULL it must be aligned on a page boundary!
+ * 
+ * 
  * TODO: This needs to be cleaned up soon as it's getting messy.
  */
 intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 {
-	uint32_t physmem;
+	page_t *page;
 	page_directory_t *dir;
 	memmap_t *memmap;
 	intptr_t tmp_vaddr;
 	buffer_t **buffers;
+	uint32_t physmem;
 	
 	if (phys == NULL)
 		phys = &physmem;
@@ -323,39 +389,34 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 	mutex_release(&memmap->lock);
 
 	
-	page_t *page;
-	page_info_t *page_info;
-	uint32_t addr = vaddr / MMU_PAGE_SIZE;
 	const uint32_t cow = (flags & KALLOC_OPTN_NOCOW) ? 0 : 1;
+	unsigned int pflags = ALLOC_FRAME_MKTABLE;
 	
+	if (cow)
+		pflags |= ALLOC_FRAME_COW;
+	if ((flags & KALLOC_OPTN_NOSHARE) != 0)
+		pflags |= ALLOC_FRAME_NOSHARE;
+	if ((flags & KALLOC_OPTN_MMAP) != 0)
+		pflags |= ALLOC_FRAME_MMAP;
+		
 	/*
 	 * Allocate and map all pages requested.
 	 */
-	page = mmu_get_page(vaddr, 1, dir);
+	page = mmu_alloc_page(dir, vaddr, pflags);
+	if (page == NULL)
+		asm("nop");
+	
 	assert(page != NULL);
-	page_info = &dir->tables[addr / 1024]->pages_info[addr % 1024];
-	page_info->cow = cow;
-	page_info->noshare = ((flags & KALLOC_OPTN_NOSHARE) != 0);
-	page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
-	if (page_info->noshare == 1)
-		dir->tables[addr / 1024]->noshare = 1;
-	if (likely(page_info->mmap == 0))
+	if (likely((flags & KALLOC_OPTN_MMAP) == 0))
 		*phys = mmu_alloc_frame(vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
 	else
 		*phys = 0;
 	
 	for (tmp_vaddr = vaddr + 0x1000; tmp_vaddr < vaddr + sz; tmp_vaddr += 0x1000)
 	{
-		addr = tmp_vaddr / MMU_PAGE_SIZE;
-		page = mmu_get_page(tmp_vaddr, 1, dir);
+		page = mmu_alloc_page(dir, tmp_vaddr, pflags);
 		assert(page != NULL);
-		page_info = &dir->tables[addr / 1024]->pages_info[addr % 1024];
-		page_info->cow = cow;
-		page_info->noshare = ((flags & KALLOC_OPTN_NOSHARE) != 0);
-		page_info->mmap = ((flags & KALLOC_OPTN_MMAP) != 0);
-		if (page_info->noshare == 1)
-			dir->tables[addr / 1024]->noshare = 1;
-		if (likely(page_info->mmap == 0))
+		if (likely((flags & KALLOC_OPTN_MMAP) == 0))
 			mmu_alloc_frame(tmp_vaddr, dir, ALLOC_FRAME_USER | ALLOC_FRAME_WRITEABLE);
 	}
 
@@ -367,7 +428,6 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 		buf->address = vaddr;
 		buf->pages = (sz + 0xFFF) / 0x1000;
 		buf->next = NULL;
-
 		while (*buffers != NULL)
 			buffers = &(*buffers)->next;
 		*buffers = buf;
@@ -524,6 +584,78 @@ page_t *mmu_get_page(uint32_t address, int make, page_directory_t *dir)
 }
 
 /*
+ * Make sure that the page range associated with the
+ * destination address has all the mappings of the source
+ * range.
+ */
+static void mmap_dup(page_directory_t *dir, intptr_t src, intptr_t dst, size_t len)
+{
+	page_t *s_page, *d_page;
+	page_info_t *s_page_info, *d_page_info;
+	uint32_t s_addr, s_indx, s_offs, d_addr, d_indx, d_offs;
+	
+	s_addr = src / MMU_PAGE_SIZE;
+	d_addr = dst / MMU_PAGE_SIZE;
+	s_indx = s_addr / 1024;
+	d_indx = d_addr / 1024;
+	s_offs = s_addr % 1024;
+	d_offs = d_addr % 1024;
+
+	s_page = &dir->tables[s_indx]->pages[s_offs];
+	s_page_info = &dir->tables[s_indx]->pages_info[s_offs];
+	d_page = &current_directory->tables[d_indx]->pages[d_offs];
+	d_page_info = &current_directory->tables[d_indx]->pages_info[d_offs];
+
+	while (len > 0)
+	{
+		if (s_page->present == 1 && d_page->present == 0)
+		{
+			mutex_wait(&frame_refs_lock);
+			frame_refs[s_page->frame]++;
+			mutex_release(&frame_refs_lock);
+			
+			if (s_page->rw == 1)
+			{
+				s_page->rw = 0;
+				s_page_info->commited = 0;
+			}
+			
+			*d_page = *s_page;
+			*d_page_info = *s_page_info;	
+			arch_invalidate_page(dst);
+		}
+		
+		s_page++;
+		d_page++;
+		s_page_info++;
+		d_page_info++;
+		s_indx++;
+		d_indx++;
+		s_offs++;
+		d_offs++;
+		
+		if (unlikely(s_offs == 1024))
+		{
+			s_indx++;
+			s_offs = 0;
+			s_page = &dir->tables[s_indx]->pages[s_offs];
+			s_page_info = &dir->tables[s_indx]->pages_info[s_offs];
+		}
+		if (unlikely(d_offs == 1024))
+		{
+			d_indx++;
+			s_offs = 0;
+			d_page = &current_directory->tables[d_indx]->pages[d_offs];
+			d_page_info = &current_directory->tables[d_indx]->pages_info[d_offs];
+		}
+		
+		src += MMU_PAGE_SIZE;
+		dst += MMU_PAGE_SIZE;
+		len -= MMU_PAGE_SIZE;
+	}
+}
+
+/*
  * page fault handler
  */
 void page_fault(registers_t *regs)
@@ -649,16 +781,16 @@ void page_fault(registers_t *regs)
 					mutex_release(&frame_refs_lock);
 
 					/*
-					* If the master page is writeable then
-					* make mark it as read only and clear the
-					* commited flag.
-					* 
-					* NOTE: This won't be a problem with any
-					* of our programs yet but it means that if
-					* the 1st file to map the file modified we
-					* get the modified version even if it's not
-					* or will never be flushed to disk.
-					*/
+					 * If the master page is writeable then
+					 * make mark it as read only and clear the
+					 * commited flag.
+					 * 
+					 * NOTE: This won't be a problem with any
+					 * of our programs yet but it means that if
+					 * the 1st file to map the file modified we
+					 * get the modified version even if it's not
+					 * or will never be flushed to disk.
+					 */
 					if (m_page->rw == 1)
 					{
 						m_page->rw = 0;
@@ -670,17 +802,18 @@ void page_fault(registers_t *regs)
 					arch_invalidate_page(address);
 					
 					/*
-					* If the length of this mapping is greater
-					* than the existing mapping we replace the current
-					* master mapping info with ours.
-					* 
-					* TODO: We need to copy all the pages that are
-					* mapped on the master mapping first, otherwise
-					* any other process mapping will get a new physical
-					* page
-					*/
-					if (mmap->len > kmmap->mmap->len)
+					 * If the length of this mapping is greater
+					 * than the existing mapping we replace the current
+					 * master mapping info with ours.
+					 */
+					if (unlikely(mmap->len > kmmap->mmap->len))
+					{
+						mmap_dup(kmmap->directory, (intptr_t) kmmap->mmap->addr,
+							(intptr_t) mmap->addr, kmmap->mmap->len);
+						/* TODO: This needs to be done atomically */
 						kmmap->mmap = mmap;
+						kmmap->directory = current_directory;
+					}
 				}
 			}
 			else	/* if there's no existing mapping... */

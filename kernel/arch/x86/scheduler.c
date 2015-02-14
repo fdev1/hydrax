@@ -109,7 +109,7 @@ void arch_move_stack(void *new_stack_start, uint32_t size)
 	{
 		if (SCHED_DEBUG_MOVE_STACK)
 			printk(8, "sched_move_stack: making 0x%x", i);
-		mmu_make_page(i);
+		/* mmu_make_page(i); */
 	}
 	
 	
@@ -122,10 +122,7 @@ void arch_move_stack(void *new_stack_start, uint32_t size)
 		printk(8, "sched_move_stack: allocated stack at 0x%x-0x%x (phys 0x%x)", 
 			i+0x1000, i + 0x1000 + size - 1, phys);
 
-	//mmu_dump_page(virt);
-	//mmu_dump_page((uint32_t)new_stack_start);
 
-	// Flush the TLB by reading and writing the page directory address again.
 	#if 1
 	uint32_t pd_addr;
 	asm volatile("mov %%cr3, %0" : "=r" (pd_addr));
@@ -136,29 +133,14 @@ void arch_move_stack(void *new_stack_start, uint32_t size)
 		"mov %eax, %cr3;" : : : "eax");
 	#endif
 
-	//printk(8, "sched_move_stack: TLB flushed");
-
-	// Old ESP and EBP, read from registers.
 	uint32_t old_stack_pointer; asm volatile("mov %%esp, %0" : "=r" (old_stack_pointer));
 	uint32_t old_base_pointer;  asm volatile("mov %%ebp, %0" : "=r" (old_base_pointer));
 	uint32_t offset            = (uint32_t) new_stack_start - initial_esp;
 	uint32_t new_stack_pointer = old_stack_pointer + offset;
 	uint32_t new_base_pointer  = old_base_pointer  + offset;
 
-	// Copy the stack.
 	memcpy((void*) new_stack_start - size + 4, (void*)initial_esp - size + 4, size);
 
-	if (SCHED_DEBUG_MOVE_STACK)
-	{
-		printk(8, "sched_move_stack: src: 0x%x-0x%x",
-			new_stack_start - size + 4, new_stack_start + 4);
-		printk(8, "sched_move_stack: dst: 0x%x-0x%x",
-			initial_esp, initial_esp);
-		printk(8, "sched_move_stack: correcting 0x%x-0x%x", 
-			new_stack_start - size + 4, new_stack_start);
-		printk(8, "sched_move_stack: values: 0x%x-0x%x", 
-			old_stack_pointer, initial_esp);
-	}
 
 	/*
 	 * walk the new stack and corrent any pointers to the old stack
@@ -177,8 +159,6 @@ void arch_move_stack(void *new_stack_start, uint32_t size)
 		}
 	}
 
-	if (SCHED_DEBUG_MOVE_STACK)
-		printk(8, "sched_move_stack: switching stack.");
 
 	/* switch stack */
 	asm volatile("mov %0, %%esp" : : "r" (new_stack_pointer));

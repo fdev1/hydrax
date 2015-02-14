@@ -28,6 +28,7 @@ SOURCES=arch/x86/boot.o \
 	arch/x86/cmos.o \
 	arch/x86/rtc.o \
 	arch/x86/kbd.o \
+	arch/x86/mmu.o \
 	bget/bget.o \
 	console.o \
 	string.o \

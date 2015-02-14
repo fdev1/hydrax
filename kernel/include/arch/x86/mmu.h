@@ -65,4 +65,10 @@ typedef struct __attribute__((packed))
 } 
 page_t;
 
+/*
+ * dump a page entry
+ */
+void mmu_dump_page(uint32_t addr);
+
+
 #endif

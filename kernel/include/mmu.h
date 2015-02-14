@@ -23,7 +23,12 @@
 #include <memmap.h>
 
 /*
- *  kalloc options   
+ * kalloc options   
+ * TODO: The codes need to be updated so that they
+ * match the ones for ALOC_FRAME_XXX bellow (which should
+ * actually be ALLOC_PAGE_XXX). That way we can just pass
+ * the kalloc flags (perhaps after masking some bits) 
+ * to mmu_alloc_page().
  */
 #define KALLOC_OPTN_ALIGN		(0x0001)  /* page aligned */
 #define KALLOC_OPTN_KERNEL		(0x0002)  /* kernel only */
@@ -146,21 +151,6 @@ intptr_t kalloc(uint32_t sz, uint32_t virt, uint32_t *phys, uint32_t flags);
 void kfree(void*);
 
 /*
- * is the page mapped?
- */
-int is_page_mapped(intptr_t address);
-
-/*
- * dump a page entry
- */
-void mmu_dump_page(uint32_t addr);
-
-/*
- * get a page entry/create it if needed
- */
-page_t *mmu_get_page(uint32_t address, int make, page_directory_t *dir);
-
-/*
  * Clone a page directory
  */
 page_directory_t *mmu_clone_directory(page_directory_t *src, intptr_t *physical, uint32_t flags);
@@ -169,8 +159,6 @@ page_directory_t *mmu_clone_directory(page_directory_t *src, intptr_t *physical,
  * Destroy a page directory
  */
 void mmu_destroy_directory(page_directory_t *directory);
-
-void mmu_make_page(uint32_t);
 
 #endif
 

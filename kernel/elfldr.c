@@ -36,21 +36,6 @@ static int elf_load_section(Elf32_Phdr *p_hdr, int fd)
 	vaddr &= 0xFFFFF000;
 	sz = p_hdr->p_memsz + (p_hdr->p_vaddr - vaddr);
 
-	/*
-	 * This can be deleted
-	 */
-	while (1)
-	{
-		if (sz <= 0)
-			break;
-		if (!is_page_mapped(vaddr))
-			break;
-		
-		assert(0);
-		vaddr += 0x1000;
-		sz -= 0x1000;
-	}
-	
 	assert(sz > 0);
 
 	if (p_hdr->p_filesz > 0)

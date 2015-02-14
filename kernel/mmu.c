@@ -119,7 +119,7 @@ static void mmu_frame_free(page_t *page)
 	mutex_wait(&frame_refs_lock);
 	if (--frame_refs[page->frame] == 0)
 	{
-		mutex_busywait(&physical_memmap.lock);
+		mutex_wait(&physical_memmap.lock);
 		memmap_clear_page(&physical_memmap, page->frame * MMU_PAGE_SIZE);
 		mutex_release(&physical_memmap.lock);
 	}
@@ -256,31 +256,15 @@ page_t *mmu_alloc_page(page_directory_t *dir,
 /*
  * gets a page structure from the specified directory
  */
-page_t *mmu_get_page(uint32_t address, int make, page_directory_t *dir)
+static inline page_t *mmu_get_page(page_directory_t* dir, uint32_t address)
 {
-	uint32_t table_idx;
 	address /= MMU_PAGE_SIZE;
-	table_idx = address / 1024;
+	const uint32_t table_idx = address / 1024;
+	const uint32_t page_idx = address % 1024;
 
-	if (dir->tables[table_idx])
-	{
-		return &dir->tables[table_idx]->pages[address % 1024];
-	}
-	else if (make)
-	{
-		uint32_t tmp;
-		dir->tables[table_idx] = (page_table_t*) kalloc(sizeof(page_table_t), 
-			NULL, &tmp, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
-		if (dir->tables[table_idx] == NULL)
-			return NULL;
-		memset(dir->tables[table_idx], 0, sizeof(page_table_t));
-		dir->tablesPhysical[table_idx] = tmp | 0x7; // PRESENT, RW, US.
-		return &dir->tables[table_idx]->pages[address % 1024];
-	}
-	else
-	{
+	if (unlikely(dir->tables[table_idx] == NULL))
 		return NULL;
-	}
+	return &dir->tables[table_idx]->pages[page_idx];
 }
 
 /*
@@ -511,15 +495,12 @@ void kfree(void* ptr)
 		}
 	}
 
-	if (*tmp == NULL)
-		asm("nop");
-	
 	assert(*tmp != NULL);
 
 	addr = (intptr_t) (*tmp)->address;
 	for (i = 0; i < (*tmp)->pages; i++)
 	{
-		mmu_frame_free(mmu_get_page(addr, 0, dir));
+		mmu_frame_free(mmu_get_page(dir, addr));
 		memmap_clear_page(memmap, addr);
 		addr += 0x1000;
 	}	
@@ -540,55 +521,19 @@ void kfree(void* ptr)
 	}
 }
 
+/*
+ * Switches to the kernel directory. This is
+ * used by exit() to switch to the kernel directory
+ * before destroying the current directory.
+ * It may be cleaner, to make mmu_destroy_directory() 
+ * not take a directory argument (ie. just destroy the 
+ * current directory).
+ */
 void mmu_switch_to_kernel_directory(void)
 {
 	current_memmap = &default_memmap;
 	switch_page_directory(&kernel_directory, 
 		(uint32_t) kernel_directory.tablesPhysical);
-}
-
-/*
- * dumps a page entry
- */
-void mmu_dump_page(intptr_t virt)
-{
-	uint32_t table_idx;
-	virt /= 0x1000;
-	table_idx = virt / 1024;
-
-	if (current_directory->tables[table_idx])
-	{
-		page_t *page = &current_directory->tables[table_idx]->pages[virt % 1024];
-		printk(8, "mmu_dump_page (0x%x): idx=0x%x", virt * 0x1000, page->frame);
-		printk(8, "mmu_dump_page (0x%x): present=%i", virt * 0x1000, page->present);
-		printk(8, "mmu_dump_page (0x%x): rw=%i", virt * 0x1000, page->rw);
-		printk(8, "mmu_dump_page (0x%x): user=%i", virt * 0x1000, page->user);
-	}
-	else
-	{
-		printk(8, "mmu_dump_page: no page for 0x%x", virt << 12);
-	}
-}
-
-/*
- * Make a physical page.
- * Why can't this be done by kalloc?
- */
-void mmu_make_page(uint32_t address)
-{
-	mmu_get_page(address, 1, current_directory);
-}
-
-/*
- * determines whether a page is mapped on the
- * current directory
- */
-int is_page_mapped(intptr_t address)
-{
-	page_t *p = mmu_get_page(address, 0, current_directory);
-	if (p == NULL || p->frame == NULL)
-		return 0;
-	return 1;		
 }
 
 /*
@@ -1061,8 +1006,8 @@ static inline page_table_t *mmu_clone_table(
 	int i;
 	
 	/* allocate table in kernel memory */
-	*table = (page_table_t*) kalloc(sizeof(page_table_t),
-		NULL, physAddr, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
+	*table = (page_table_t*) kalloc(sizeof(page_table_t), NULL, physAddr, 
+		KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL | KALLOC_OPTN_WRITEABLE);
 	if (*table == NULL)
 		return NULL;
 	memset(*table, 0, sizeof(page_table_t));
@@ -1205,11 +1150,6 @@ void mmu_destroy_directory(page_directory_t *directory)
 		}
 	}
 	kfree((void*) directory);
-}
-
-void mmu_purge_directory(page_directory_t *directory)
-{
-	assert(0);
 }
 
 /*

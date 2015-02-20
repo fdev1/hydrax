@@ -76,7 +76,7 @@ int shm_unlink(const char *);
  * Used internally by the kernel to track mapped
  * files.
  */
-#if defined(KERNEL_CODE)
+#if 1 || defined(KERNEL_CODE)
 typedef struct __mmap_info
 {
 	void *addr;

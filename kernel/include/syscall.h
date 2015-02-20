@@ -83,8 +83,9 @@
 #define SYSCALL_PTHREAD_KILL		(59)
 #define SYSCALL_PTHREAD_CREATE	(60)
 #define SYSCALL_PTHREAD_EXIT		(61)
+#define SYSCALL_UNAME			(62)
 
-#define SYSCALL_COUNT			(62)
+#define SYSCALL_COUNT			(63)
 
 /*
  * initialize system call interface

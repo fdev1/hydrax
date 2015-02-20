@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/utsname.h>
 
 #define CONFIG_DEFAULT_HOST_NAME		("hydrax")
 
@@ -56,5 +57,20 @@ int sethostname(const char *name, size_t len)
 	while (len-- && *name != NULL)
 		*p_host++ = *name++;
 	*p_host = NULL;
+	return ESUCCESS;
+}
+
+/*
+ * Get name and info about current kernel.
+ */
+int uname(struct utsname *buf)
+{
+	if (buf == NULL)
+		return EFAULT;
+	strcpy(buf->sysname, "Hydrax");
+	strcpy(buf->nodename, "");
+	strcpy(buf->release, "0.0.1");
+	strcpy(buf->version, "0.0.1");
+	strcpy(buf->machine, "qemu");
 	return ESUCCESS;
 }

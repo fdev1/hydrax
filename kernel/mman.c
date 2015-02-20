@@ -13,6 +13,11 @@
  *
  */
 
+#if defined(KERNEL_CODE)
+#undef KERNEL_CODE
+#endif
+#define KERNEL_CODE
+
 #include <arch/arch.h>
 #include <sys/mman.h>
 #include <mmu.h>
@@ -101,3 +106,5 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	
 	return ap;
 }
+
+

@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include <sys/utsname.h>
 
 /*
  * test system call
@@ -114,6 +115,7 @@ static syscall_t syscalls[] =
 	{ &pthread_kill, 2 },
 	{ &pthread_create, 4 },
 	{ &pthread_exit, 1 },
+	{ &uname, 1 },
 };
 
 /*

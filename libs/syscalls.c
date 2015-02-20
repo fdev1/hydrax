@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <syscall.h>
 #include <stdio.h>
@@ -120,6 +121,8 @@ ssyscall2(SYSCALL_SIGWAIT, int, sigwait, const sigset_t*, set, int*, sig);
 ssyscall4(SYSCALL_PTHREAD_CREATE, int, pthread_create, pthread_t*, thread, const pthread_attr_t*, attr, pthread_start_fn, start_routine, void*, arg);
 ssyscall2(SYSCALL_PTHREAD_KILL, int, pthread_kill, pthread_t, thread, int, sig);
 ssyscall1(SYSCALL_PTHREAD_EXIT, int, pthread_exit, int, status_code);
+ssyscall1(SYSCALL_ISATTY, int, isatty, int, fd);
+ssyscall1(SYSCALL_UNAME, int, uname, struct utsname*, buf);
 
 int ioctl(int fd, unsigned int request, ...)
 {

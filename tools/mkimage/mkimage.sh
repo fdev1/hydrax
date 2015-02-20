@@ -1,7 +1,8 @@
 #!/bin/sh
 
 cd $(dirname $0)
-cp ../../files/hydrax-fs.img ./hydrax-fs.img
+#cp ../../files/hydrax-fs.img ./hydrax-fs.img
+tar -xvf ../../files/hydrax-fs.xz
 /bin/echo -e 	"cd boot\n" \
 		"write ../../kernel/hydrax hydrax\n" \
 		"write ../../kernel/initrd.img initrd" | /sbin/debugfs -w hydrax-fs.img

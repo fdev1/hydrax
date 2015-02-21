@@ -1,0 +1,9 @@
+binutils-2.25/*
+gcc-4.8.4/*
+mpc-1.0.3/*
+mpfr-3.1.2/*
+tmp/*
+build/*
+build-binutils/*
+build-gcc/*
+

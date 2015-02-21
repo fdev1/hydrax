@@ -1,14 +1,24 @@
 Requirements
 ============
 
-- x86 GCC
-- x86 GAS
-- GRUB Legacy
+- GCC and GNU toolchain
+- GRUB2 (if creating image from scratch)
 - debugfs
+- QEMU (qemu-system-i386)
 
 Build
 =====
 
-Just run make.
+First we need to build a gcc cross-compiler. A script is
+provided for this. It needs to download the compiler 
+sources so you must be connected to the internet when you
+run it:
+
+tools/gcc/make_gcc.sh
+
+
+Now you can just run make on the top-level project directory
+to build a QEMU hard disk image. Then run 'make run' to boot the
+image with QEMU.
 
 

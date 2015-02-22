@@ -12,6 +12,10 @@
 # permission from the author.
 # 
 
+CC=../tools/gcc/bin/i386-elf-gcc
+LD=../tools/gcc/bin/i386-elf-ld
+AR=../tools/gcc/bin/i386-elf-ar
+
 SOURCES=syscalls.o string.o stdio.o start.o bget/bget.o malloc.o
 
 CFLAGS=-m32 -static -nostdlib -nostdinc -fno-builtin -I. -I../kernel/include -fno-stack-protector

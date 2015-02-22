@@ -2,6 +2,9 @@
 # Project Hydrax Utilities Makefile
 #
 
+CC=../tools/gcc/bin/i386-elf-gcc
+LD=../tools/gcc/bin/i386-elf-ld
+
 SOURCES=main.o args.o
 ECHO_SOURCES=echo.o
 PIPETEST_SOURCES=pipetest.o
@@ -18,7 +21,7 @@ THREAD_EXE=threadtest
 CHOWN_OBJ=chown.o
 CHOWN_EXE=chown
 
-CFLAGS=-m32 -g -nostdlib -nostdinc -fno-builtin -I../libs \
+CFLAGS=-g -nostdlib -nostdinc -fno-builtin -I../libs \
 	-I../kernel/include -fno-stack-protector
 LDFLAGS=-melf_i386
 

@@ -434,6 +434,17 @@ int exec(char *path, ...)
 }
 
 /*
+ * This is the entry point into usermode.
+ * It calls the program's entry point and calls
+ * exit upon return.
+ */
+void __usermode user_entry(
+	const int (*main_func)(int, char**), int argc, char **argv)
+{
+	exit(main_func(argc, argv));
+}
+
+/*
  * Replace the current userspace with an executable
  * image
  */
@@ -500,7 +511,7 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	 * allocate heap space to store a string pointer
 	 * for each argument plus a NULL pointer.
 	 */
-	l += (sizeof(char*) * (i + 1));
+	l += (sizeof(char*) * (i + 2));
 	l += strlen(path) + 1;
 	
 	/* make sure sz is word aligned */
@@ -562,7 +573,7 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	 * entry point. Then call exit() from usermode
 	 * to make sure we don't return to kernel mode
 	 */
-	arch_enter_user_mode(ARCH_STACK_START, vaddr, i, current_task->argv, l);
+	arch_enter_user_mode(ARCH_STACK_START, vaddr, (i + 1), current_task->argv, l);
 	assert(0);
 	return ENOENT;
 }

@@ -10,3 +10,6 @@ build-gcc/*
 bin/*
 i386-elf/*
 share/*
+binutils-2.24/*
+lib/*
+libexec/*

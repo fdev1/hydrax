@@ -146,7 +146,7 @@ intptr_t elf_load(int fd)
 	read(fd, (unsigned char*) p_hdr, sizeof(Elf32_Phdr) * elf_hdr->e_phnum);
 
 	/*
-	 * load all section in order
+	 * load all program sections
 	 */
 	for (j = 0; j < elf_hdr->e_phnum; j++)
 	{

@@ -22,6 +22,7 @@ SECTIONS
 		*(.utext)
 		. = ALIGN(4096);
 	}
+	ucode_end = .; _ucode_end = .; __ucode_end = .;
 
 	.data :
 	{

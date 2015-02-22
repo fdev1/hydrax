@@ -64,6 +64,7 @@ kmmap_t;
  * imports
  */
 extern uint32_t ucode;		/* defined by linker */
+extern uint32_t ucode_end;	/* defined by linker */
 extern uint32_t data;		/* defined by linker */
 extern uint32_t end;    		/* defined by linker */
 extern kheap_t kheap;
@@ -938,7 +939,7 @@ void mmu_init(multiboot_header_t *p_mboot)
 	 */
 	for (i = 0; i < end_of_kernel; i += MMU_PAGE_SIZE)
 	{
-		if (unlikely(i >= ucode && i <= data))
+		if (unlikely(i >= (uint32_t) &ucode && i < (uint32_t) &ucode_end))
 		{
 			mmu_alloc_page(&kernel_directory, i, 
 				ALLOC_FRAME_MKTABLE | ALLOC_FRAME_USER, NULL);

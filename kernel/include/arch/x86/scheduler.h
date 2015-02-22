@@ -206,13 +206,28 @@ task_state_t;
 /*
  * Switch to user mode and call a function.
  * 
- * TODO: I'm not sure how to mark the start of the stack so
- * that GDB can find it.
+ * Sets usermode stack as follows:
+ * 
+ * +-----------+
+ * |    eip    |	--> kernel eip
+ * +-----------+
+ * |    esp    |	--> kernel stack
+ * +-----------+
+ * |    argv   |	--> arguments data
+ * +-----------+
+ * |   *argv   |	--> arguments string table
+ * +-----------+
+ * |    argc   | 	--> argument count
+ * +-----------+
+ * |   *main   |	--> program entry point
+ * +-----------+
+ * 
+ * Then switches to usermode and transfers control 
+ * to user_entry().
  * 
  */
 #define arch_enter_user_mode(stack, vaddr, argc, argv, len)	\
-	asm __volatile__(									\
-		"push %1;"		/* eip */					\
+	asm __volatile__(								\
 		"mov %%esp, %%ebx;"							\
 		"mov %0, %%esp;"							\
 		"1:"										\
@@ -229,13 +244,13 @@ task_state_t;
 		"add $0x4, %%ebp;"							\
 		"add $0x4, %3;"							\
 		"sub $0x4, %4;"							\
-		/*"test %4, %4;"*/								\
 		"jnz 2b;"									\
 		"3:"										\
 		"pop %3;"									\
 		"lea 0x4(%%esp), %%eax;"						\
 		"push %%eax;"								\
 		"push %2;"								\
+		"push %1;"								\
 		"mov %%eax, %1;"							\
 		"sub %3, %%eax;"							\
 		"test %2, %2;"								\
@@ -246,20 +261,21 @@ task_state_t;
 		"mov %3, (%1);"							\
 		"add $0x4, %1;"							\
 		"dec %2;"									\
-		/*"test %2, %2;"*/								\
 		"jnz 4b;"									\
 		"5:"										\
 		"mov %%esp, %2;"							\
+		"sub $0x4, %2;"							\
 		"mov %%ebx, %%esp;"							\
-		"pop %1;"									\
+												\
+		"pushf;"			/* eflags */				\
+		"pop %%eax;"		/* read eflags */			\
+		"or $0x200, %%eax;"	/* sti on iret */			\
+												\
 		"pushl $0x23;" 	/* ss */					\
 		"pushl %2;"		/* esp */					\
-		"pushf;"			/* eflags */				\
-		"pop %%eax;"								\
-		"or $0x200, %%eax;"	/* sti on iret */			\
-		"push %%eax;"								\
+		"push %%eax;"		/* eflags */				\
 		"pushl $0x1B;"		/* cs */					\
-		"push %1;"								\
+		"push $user_entry;"	/* eip */					\
 		"cli;"									\
 		"mov $0x23, %%ax;"							\
 		"mov %%ax, %%ds;"							\

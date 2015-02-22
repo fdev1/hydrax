@@ -85,7 +85,6 @@ void stack_exception(registers_t *regs)
 	schedule();
 }
 
-
 /*
  * move the stack
  */

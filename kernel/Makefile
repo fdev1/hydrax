@@ -12,9 +12,9 @@
 # permission from the author.
 # 
 
-CC=../tools/gcc/bin/i386-elf-gcc
-AS=../tools/gcc/bin/i386-elf-as
-LD=../tools/gcc/bin/i386-elf-ld
+CC=../tools/bin/i386-elf-gcc
+AS=../tools/bin/i386-hydrax-as
+LD=../tools/bin/i386-hydrax-ld
 
 CFLAGS=-g -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
 	-DKERNEL_CODE -Iinclude
@@ -82,12 +82,12 @@ kernel: $(SOURCES)
 	@$(LD) $(LDFLAGS) -o hydrax $(SOURCES)
 	
 	@echo -e "  SYMS\t\thydrax.map"
-	@../tools/symclean/symclean hydrax.map hydrax.syms
+	@../tools/src/symclean/symclean hydrax.map hydrax.syms
 	
 	@echo -e "  MKINITRD\thydrax.initrd"
-	@../tools/mkinitrd/mkinitrd \
+	@../tools/src/mkinitrd/mkinitrd \
 		hydrax.syms /lib/hydrax.syms \
-		../tools/mkinitrd/hello.txt /home/hello.txt \
+		../tools/src/mkinitrd/hello.txt /home/hello.txt \
 		../utils/init /sbin/init \
 		../utils/echo /bin/echo \
 		../utils/chown /bin/chown \
@@ -97,7 +97,7 @@ kernel: $(SOURCES)
 		../files/shellrc /etc/shellrc > /dev/null
 		
 	@echo -e "  MKIMAGE\thydrax.img"
-	@../tools/mkimage/mkimage.sh 
+	@../tools/src/mkimage/mkimage.sh 
 
 .s.o:
 	@echo -e "  AS\t\t"$<

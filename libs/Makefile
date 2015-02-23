@@ -12,9 +12,9 @@
 # permission from the author.
 # 
 
-CC=../tools/gcc/bin/i386-elf-gcc
-LD=../tools/gcc/bin/i386-elf-ld
-AR=../tools/gcc/bin/i386-elf-ar
+CC=../tools/bin/i386-elf-gcc
+LD=../tools/bin/i386-hydrax-ld
+AR=../tools/bin/i386-hydrax-ar
 
 SOURCES=syscalls.o string.o stdio.o start.o bget/bget.o malloc.o
 

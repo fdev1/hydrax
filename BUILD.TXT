@@ -3,6 +3,7 @@ Requirements
 
 - GCC and GNU toolchain
 - GRUB2 (if creating image from scratch)
+- Autoconf 2.64
 - debugfs
 - QEMU (qemu-system-i386)
 

@@ -22,6 +22,7 @@
 #include <syscall.h>
 #include <memory.h>
 #include <unistd.h>
+#include <errno.h>
 
 /*
  * load a program segment.
@@ -29,19 +30,20 @@
 static int elf_ldprog(Elf32_Phdr *p_hdr, int fd)
 {
 	void *ptr;
-	uint32_t vaddr;
+	intptr_t vaddr;
 	size_t sz;
-	static int i = 0;	
+
 	vaddr = p_hdr->p_vaddr;
-	vaddr &= 0xFFFFF000;
-	sz = p_hdr->p_memsz + (p_hdr->p_vaddr & 0xFFF);
+	vaddr &= ~(MMU_PAGE_SIZE - 1);
+	sz = p_hdr->p_memsz + (p_hdr->p_vaddr & (MMU_PAGE_SIZE - 1));
 
 	assert(sz > 0);
 
 	if (p_hdr->p_filesz > 0)
 	{
 		void *ap;
-		ap = mmap((void*) p_hdr->p_vaddr, sz, PROT_READ | PROT_WRITE | PROT_EXEC, 
+		ap = mmap((void*) p_hdr->p_vaddr, sz, 
+			PROT_READ | PROT_WRITE | PROT_EXEC, 
 			MAP_SHARED, fd, p_hdr->p_offset);
 		if (unlikely(ap == NULL))
 		{
@@ -57,9 +59,7 @@ static int elf_ldprog(Elf32_Phdr *p_hdr, int fd)
 		if (ptr == NULL)
 			return -1;
 		assert(ptr == (void*) vaddr);
-		
-		ptr = (void*) p_hdr->p_vaddr;
-		memset(ptr, 0, p_hdr->p_memsz);
+		memset((void*) p_hdr->p_vaddr, 0, p_hdr->p_memsz);
 	}
 	return 0;
 }
@@ -115,28 +115,45 @@ static int elf_ldsec(Elf32_Shdr *s_hdr, int fd, int i)
 intptr_t elf_load(int fd)
 {
 	intptr_t entry = NULL;
-	unsigned int j;
 	Elf32_Ehdr *elf_hdr;
 	Elf32_Phdr *p_hdr;
+	unsigned int j;
 	
 	elf_hdr = malloc(sizeof(Elf32_Ehdr));
-	if (elf_hdr == NULL)
+	if (unlikely(elf_hdr == NULL))
+	{
+		current_task->errno = ENOMEM;
 		return NULL;
+	}
 
 	/* read elf header */
 	rewind(fd);
-	read(fd, (unsigned char*) elf_hdr, sizeof(Elf32_Ehdr));
+	if (sizeof(Elf32_Ehdr) > 
+		read(fd, (unsigned char*) elf_hdr, sizeof(Elf32_Ehdr)))
+	{
+		current_task->errno = EBADF;
+		return NULL;
+	}
 				
 	/* check magic number */
-	if (*((uint32_t*) elf_hdr->e_ident) != ELFMAG)
+	if (unlikely(*((uint32_t*) elf_hdr->e_ident) != ELFMAG))
+	{
+		current_task->errno = EINVAL;
 		return NULL;
+	}
 	
-	assert(elf_hdr->e_ident[EI_CLASS] == ELFCLASS32);
+	/* check ELF class */
+	if (unlikely(elf_hdr->e_ident[EI_CLASS] != ELFCLASS32))
+	{
+		current_task->errno = EINVAL;
+		return NULL;
+	}
 
 	/* allocate memory for proggram headers */
 	p_hdr = malloc(sizeof(Elf32_Phdr) * elf_hdr->e_phnum);
 	if (p_hdr == NULL)
 	{
+		current_task->errno = ENOMEM;
 		printk(7, "elf_loader: Out of memory");
 		free(elf_hdr);
 		return NULL;

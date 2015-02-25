@@ -2,7 +2,7 @@
 # Project Hydrax Utilities Makefile
 #
 
-CC=../tools/bin/i386-elf-gcc
+CC=../tools/bin/i386-hydrax-gcc
 LD=../tools/bin/i386-hydrax-ld
 
 SOURCES=main.o args.o

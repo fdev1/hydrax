@@ -12,7 +12,7 @@
 # permission from the author.
 # 
 
-CC=../tools/bin/i386-elf-gcc
+CC=../tools/bin/i386-hydrax-gcc
 LD=../tools/bin/i386-hydrax-ld
 AR=../tools/bin/i386-hydrax-ar
 

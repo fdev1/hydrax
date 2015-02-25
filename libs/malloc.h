@@ -13,7 +13,7 @@ void *malloc(size_t sz);
 /*
  * Free heap memory.
  */
-void free(void);
+void free(void*);
 
 #endif
 

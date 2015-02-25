@@ -2,6 +2,7 @@
 #define ITOA_H
 
 #include <arch/arch.h>
+#include <memory.h>
 
 /*
  * itoa

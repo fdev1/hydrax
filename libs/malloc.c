@@ -16,8 +16,8 @@ void *malloc(size_t sz)
 	return bget(sz);
 }
 
-void free(void)
+void free(void* ptr)
 {
-	return brel();
+	return brel(ptr);
 }
 

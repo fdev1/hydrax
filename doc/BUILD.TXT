@@ -5,6 +5,7 @@ Requirements
 - GRUB2 (if creating image from scratch)
 - Autoconf 2.64
 - debugfs
+- patch
 - QEMU (qemu-system-i386)
 
 Build

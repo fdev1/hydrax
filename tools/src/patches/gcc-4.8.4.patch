@@ -1,0 +1,110 @@
+diff -rupN ../gcc-tmp/gcc-4.8.4/config.sub gcc-4.8.4/config.sub
+--- ../gcc-tmp/gcc-4.8.4/config.sub	2014-04-04 09:48:08.000000000 -0400
++++ gcc-4.8.4/config.sub	2015-02-25 14:45:31.000000000 -0500
+@@ -1376,7 +1376,7 @@ case $os in
+ 	      | -os2* | -vos* | -palmos* | -uclinux* | -nucleus* \
+ 	      | -morphos* | -superux* | -rtmk* | -rtmk-nova* | -windiss* \
+ 	      | -powermax* | -dnix* | -nx6 | -nx7 | -sei* | -dragonfly* \
+-	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops* | -es*)
++	      | -skyos* | -haiku* | -rdos* | -toppers* | -drops* | -es* | -hydrax*)
+ 	# Remember, each alternative MUST END IN *, to match a version number.
+ 		;;
+ 	-qnx*)
+diff -rupN ../gcc-tmp/gcc-4.8.4/fixincludes/mkfixinc.sh gcc-4.8.4/fixincludes/mkfixinc.sh
+--- ../gcc-tmp/gcc-4.8.4/fixincludes/mkfixinc.sh	2012-10-28 17:42:48.000000000 -0400
++++ gcc-4.8.4/fixincludes/mkfixinc.sh	2015-02-25 14:45:31.000000000 -0500
+@@ -11,6 +11,7 @@ target=fixinc.sh
+ 
+ # Check for special fix rules for particular targets
+ case $machine in
++    *-hydrax* | \
+     i?86-*-cygwin* | \
+     i?86-*-mingw32* | \
+     x86_64-*-mingw32* | \
+@@ -24,7 +25,6 @@ case $machine in
+ 	#  THEN create a no-op fixer and exit
+ 	(echo "#! /bin/sh" ; echo "exit 0" ) > ${target}
+         ;;
+-
+     *)
+ 	cat < ${srcdir}/fixinc.in > ${target} || exit 1
+ 	;;
+diff -rupN ../gcc-tmp/gcc-4.8.4/gcc/config/hydrax.h gcc-4.8.4/gcc/config/hydrax.h
+--- ../gcc-tmp/gcc-4.8.4/gcc/config/hydrax.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.8.4/gcc/config/hydrax.h	2015-02-25 14:45:31.000000000 -0500
+@@ -0,0 +1,20 @@
++/* Useful if you wish to make target-specific gcc changes */
++#undef TARGET_HYDRAX
++#define TARGET_HYDRAX 1
++ 
++/* Don't automatically add extern "C" { } around header files. */
++#undef  NO_IMPLICIT_EXTERN_C
++#define NO_IMPLICIT_EXTERN_C 1
++  
++/* Additional predefined macros. */
++#undef TARGET_OS_CPP_BUILTINS
++#define TARGET_OS_CPP_BUILTINS()      		\
++do 						\
++{                                		\
++	builtin_define ("__myos__");      	\
++	builtin_define ("__unix__");      	\
++	builtin_assert ("system=hydrax");   	\
++	builtin_assert ("system=unix");   	\
++	builtin_assert ("system=posix");   	\
++} 						\
++while(0);
+diff -rupN ../gcc-tmp/gcc-4.8.4/gcc/config.gcc gcc-4.8.4/gcc/config.gcc
+--- ../gcc-tmp/gcc-4.8.4/gcc/config.gcc	2014-11-10 06:35:27.000000000 -0500
++++ gcc-4.8.4/gcc/config.gcc	2015-02-25 14:45:31.000000000 -0500
+@@ -807,6 +807,11 @@ case ${target} in
+     *) echo 'Unknown thread configuration for VxWorks'; exit 1 ;;
+   esac
+   ;;
++*-*-hydrax*)
++  gas=yes
++  gnu_ld=yes
++  default_use_cxa_atexit=yes
++  ;;
+ *-*-elf)
+   # Assume that newlib is being used and so __cxa_atexit is provided.
+   default_use_cxa_atexit=yes
+@@ -815,6 +820,9 @@ case ${target} in
+ esac
+ 
+ case ${target} in
++i[3-7]86-*-hydrax*)
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h hydrax.h"
++	;;
+ aarch64*-*-elf)
+ 	tm_file="${tm_file} dbxelf.h elfos.h newlib-stdint.h"
+ 	tm_file="${tm_file} aarch64/aarch64-elf.h aarch64/aarch64-elf-raw.h"
+diff -rupN ../gcc-tmp/gcc-4.8.4/libgcc/config.host gcc-4.8.4/libgcc/config.host
+--- ../gcc-tmp/gcc-4.8.4/libgcc/config.host	2014-03-20 12:12:30.000000000 -0400
++++ gcc-4.8.4/libgcc/config.host	2015-02-25 14:45:31.000000000 -0500
+@@ -280,6 +280,10 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
+ esac
+ 
+ case ${host} in
++i[3-7]86-*-hydrax*)
++        extra_parts="$extra_parts crtbegin.o crtend.o"
++	tmake_file="$tmake_file i386/t-crtstuff t-crtstuff-pic t-libgcc-pic"
++	;;
+ aarch64*-*-elf)
+ 	extra_parts="$extra_parts crtbegin.o crtend.o crti.o crtn.o"
+ 	tmake_file="${tmake_file} ${cpu_type}/t-aarch64"
+diff -rupN ../gcc-tmp/gcc-4.8.4/libstdc++-v3/crossconfig.m4 gcc-4.8.4/libstdc++-v3/crossconfig.m4
+--- ../gcc-tmp/gcc-4.8.4/libstdc++-v3/crossconfig.m4	2012-05-02 15:34:31.000000000 -0400
++++ gcc-4.8.4/libstdc++-v3/crossconfig.m4	2015-02-25 14:45:31.000000000 -0500
+@@ -269,6 +269,12 @@ case "${host}" in
+     AC_DEFINE(HAVE_TANF)
+     AC_DEFINE(HAVE_TANHF)
+     ;;
++  *-hydrax*)
++    GLIBCXX_CHECK_COMPILER_FEATURES
++    GLIBCXX_CHECK_LINKER_FEATURES
++    GLIBCXX_CHECK_MATH_SUPPORT
++    GLIBCXX_CHECK_STDLIB_SUPPORT
++    ;;
+   *)
+     AC_MSG_ERROR([No support for this host/target combination.])
+    ;;

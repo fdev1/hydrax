@@ -1,4 +1,6 @@
-#include <arch/stdarg.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>

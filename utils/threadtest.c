@@ -1,3 +1,6 @@
+#include <sys/types.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <assert.h>
 #include <arch/stdarg.h>
 #include <unistd.h>

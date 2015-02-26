@@ -82,6 +82,7 @@ sudo grub2-install --root-directory=$(pwd)/mnt \
 	--no-floppy \
 	--modules="normal part_msdos ext2 multiboot" \
 	--force /dev/loop0 > /dev/null 2> /dev/null
+mkdir -p $(pwd)/mnt/usr/share/grub/
 
 echo -e "$BULLET Cleaning up..."
 sudo umount $(pwd)/mnt

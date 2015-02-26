@@ -9,7 +9,7 @@ int argc(const char *line)
 	const char *l;
 	i = 1;
 	l = line;
-	while (*l != NULL)
+	while (*l != 0)
 	{
 		if (*l == ' ')
 			i++;
@@ -27,10 +27,10 @@ char *argv(char *line, int index, char *buf)
 
 	while (1)
 	{
-		while (*b != NULL && *b != ' ')
+		while (*b != 0 && *b != ' ')
 			b++;
 
-		if (i >= index || *b == NULL)
+		if (i >= index || *b == 0)
 			break;
 		
 		bb = ++b;
@@ -40,7 +40,7 @@ char *argv(char *line, int index, char *buf)
 	bbb = buf;
 	while (bb < b)
 		*buf++ = *bb++;
-	*buf++ = NULL;
+	*buf++ = 0;
 	return bbb;
 			
 }

@@ -20,6 +20,12 @@ int pthread_create(pthread_t * thread,
 	pthread_start_fn start_routine,
 	void *arg);
 
+/*
+ *  * Send signal to a thread
+ *   */
+int pthread_kill(pthread_t, int);
+
+
 int pthread_exit(int status_code);
 
 #endif

@@ -328,11 +328,11 @@ int sigpending(sigset_t *set)
 sighandler_t signal(int sig, sighandler_t disp)
 {
 	if (unlikely(sig < 1 || sig > 32 || sig == SIGKILL || sig == SIGSTOP))
-		return EINVAL;
+		return (sighandler_t) EINVAL;
 	current_task->sig_action[sig - 1].sa_flags = 0;
 	current_task->sig_action[sig - 1].sa_mask = 0;
 	current_task->sig_action[sig - 1].sa_handler = disp;
-	return ESUCCESS;
+	return (sighandler_t) ESUCCESS;
 }
 
 /*

@@ -7,9 +7,11 @@
 /*
  * itoa
  */
+#if 0
 char *itoa(int);
 
 char *itox(unsigned int);
+#endif
 
 int strcmp(const char *str1, const char *str2);
 

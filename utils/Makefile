@@ -4,7 +4,7 @@
 
 CC=../tools/bin/i386-hydrax-gcc
 LD=../tools/bin/i386-hydrax-ld
-
+LIBC=../tools/i386-hydrax/lib/libc.a 
 SOURCES=main.o args.o
 ECHO_SOURCES=echo.o
 PIPETEST_SOURCES=pipetest.o
@@ -21,11 +21,10 @@ THREAD_EXE=threadtest
 CHOWN_OBJ=chown.o
 CHOWN_EXE=chown
 
-CFLAGS=-g -nostdlib -nostdinc -fno-builtin -I../libs \
-	-I../kernel/include -fno-stack-protector
+CFLAGS=-g -fno-stack-protector
 LDFLAGS=-melf_i386
 
-all: init pipe echo thread chown
+all: init pipe echo chown
 
 clean: 
 	rm -f *.o 
@@ -36,23 +35,23 @@ clean:
 	
 init: $(INIT_OBJ)
 	@echo -e "  LD\t\t$(INIT_EXE)"
-	@$(LD) $(LDFLAGS) -o $(INIT_EXE) $(INIT_OBJ) ../libs/libc.a
+	@$(LD) $(LDFLAGS) -o $(INIT_EXE) $(INIT_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 echo: $(ECHO_OBJ)
 	@echo -e "  LD\t\t$(ECHO_EXE)"
-	@$(LD) $(LDFLAGS) -o $(ECHO_EXE) $(ECHO_OBJ) ../libs/libc.a
+	@$(LD) $(LDFLAGS) -o $(ECHO_EXE) $(ECHO_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 pipe: $(PIPE_OBJ)
 	@echo -e "  LD\t\t$(PIPE_EXE)"
-	@$(LD) $(LDFLAGS) -o $(PIPE_EXE) $(PIPE_OBJ) ../libs/libc.a
+	@$(LD) $(LDFLAGS) -o $(PIPE_EXE) $(PIPE_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 thread: $(THREAD_OBJ)
 	@echo -e "  LD\t\t$(THREAD_EXE)"
-	@$(LD) $(LDFLAGS) -o $(THREAD_EXE) $(THREAD_OBJ) ../libs/libc.a
+	@$(LD) $(LDFLAGS) -o $(THREAD_EXE) $(THREAD_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 chown: $(CHOWN_OBJ)
 	@echo -e "  LD\t\t$(CHOWN_EXE)"
-	@$(LD) $(LDFLAGS) -o $(CHOWN_EXE) $(CHOWN_OBJ) ../libs/libc.a 
+	@$(LD) $(LDFLAGS) -o $(CHOWN_EXE) $(CHOWN_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 .c.o:
 	@echo -e "  CC\t\t"$<

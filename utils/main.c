@@ -1,6 +1,7 @@
 #include <arch/stdarg.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <syscall.h>
@@ -284,8 +285,9 @@ static void parse_command(char *cmd)
 			else
 			{
 				int exit_code;
+				char buffy[10];
 				waitpid(pid, &exit_code, NULL);
-				setenv("!", itoa(exit_code), 1);
+				setenv("!", itoa(exit_code, buffy, 10), 1);
 			}
 		}
 	}

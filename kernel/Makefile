@@ -92,7 +92,7 @@ kernel: $(SOURCES)
 		../utils/echo /bin/echo \
 		../utils/chown /bin/chown \
 		../utils/pipetest /bin/pipetest \
-		../utils/threadtest /bin/threadtest \
+		../utils/pipetest /bin/threadtest \
 		../files/inittab /etc/inittab \
 		../files/shellrc /etc/shellrc > /dev/null
 		

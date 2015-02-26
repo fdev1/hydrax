@@ -26,25 +26,28 @@ rm -fr build/
 echo -e "$BULLET Unpacking newlib-2.2.0.20150225.tar.gz..."
 tar -xf ../tmp/newlib-2.2.0.20150225.tar.gz
 
-#echo -e "$BULLET copying config files..."
-#mkdir -p newlib-2.2.0.20150225/newlib/libc/sys/hydrax/
-#cp -v newlib/config.sub newlib-2.2.0.20150225/config.sub
-#cp -v newlib/configure.host newlib-2.2.0.20150225/newlib/configure.host
-#cp -v newlib/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
-#cp -v newlib/crt0.S newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S
-#cp -v newlib/hydrax_configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
-#cp -v newlib/hydrax_Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
-#cp -v newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
-#cp -v newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
-#exit -1
+echo -e "$BULLET copying config files..."
+mkdir -p newlib-2.2.0.20150225/newlib/libc/sys/hydrax/
+cp -v newlib/config.sub newlib-2.2.0.20150225/config.sub
+cp -v newlib/configure.host newlib-2.2.0.20150225/newlib/configure.host
+cp -v newlib/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
+cp -v newlib/crt0.S newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S
+cp -v newlib/hydrax_configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
+cp -v newlib/hydrax_Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
+cp -v newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
+cp -v newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
 
 echo -e "$BULLET Applying newlib-2.2.0.20150225.patch..."
 cd newlib-2.2.0.20150225
-patch -p1 < ../patches/newlib-2.2.0.20150225.patch || last_error=1
-if [ "$last_error" == "1" ]; then
-	echo -e "$REDBUL Could not apply patch!!"
-	exit -1
-fi
+#patch -p1 < ../patches/newlib-2.2.0.20150225.patch || last_error=1
+#if [ "$last_error" == "1" ]; then
+#	echo -e "$REDBUL Could not apply patch!!"
+#	exit -1
+#fi
+mkdir -p newlib/libc/sys/hydrax/include/sys
+cp ../../../kernel/include/dirent.h newlib/libc/sys/hydrax/include/sys/dirent.h
+cp ../../../kernel/include/signal.h newlib/libc/sys/hydrax/include/sys/signal.h
+cp ../../../kernel/include/pthread.h newlib/libc/sys/hydrax/include/sys/pthread.h
 cd ../
 
 echo -e "$BULLET Running autoconf..."
@@ -87,7 +90,7 @@ if [ "$last_error" == "1" ]; then
 	exit -1
 fi
 echo -e "$BULLET Installing newlib to '$PREFIX'..."
-make install || last_error=1
+make DESTDIR=${SYSROOT} install || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error install newlib!!"
 	exit -1

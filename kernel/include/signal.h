@@ -21,6 +21,14 @@
 #include <time.h>
 #include <errno.h>
 
+#ifndef ESUCCESS
+#define ESUCCESS 0
+#endif
+
+#ifndef _POSIX_SOURCE
+#define _POSIX_SOURCE
+#endif
+
 /*
  * signals enumerator
  */
@@ -115,6 +123,9 @@ struct sigaction
  */
 typedef void (*signal_handler_t)(int signum);
 typedef void (*sighandler_t)(int);
+typedef void (*sig_t)(int);	/* bsd naming */
+typedef signal_handler_t _sig_func_ptr;
+
 
 #define SIG_DFL		((signal_handler_t)  0)
 #define SIG_ERR		((signal_handler_t) -1)
@@ -240,7 +251,7 @@ int killpg(pid_t, int);
 /*
  * Send signal to a thread
  */
-int pthread_kill(pthread_t, int);
+//int pthread_kill(pthread_t, int);
 
 #if 0
 int pthread_sigmask(int, const sigset_t *, sigset_t *); 

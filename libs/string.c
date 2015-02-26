@@ -63,6 +63,7 @@ char *strcat(char *dest, const char *src)
     return dest;
 }
 
+#if 0
 char *itoa(int val)
 {
 	char neg;
@@ -135,4 +136,4 @@ char *itox(unsigned int val)
 	return buff;
 
 }
-
+#endif

@@ -47,23 +47,23 @@ rm -fr build-gcc
 echo -e "$BULLET Unpacking binutils-2.24.tar.gz..."
 tar -xf ../tmp/binutils-2.24.tar.gz
 
-#echo -e "Copying config files..."
-#cp binutils/config.sub binutils-2.24/config.sub
-#cp binutils/config.bfd binutils-2.24/bfd/config.bfd
-#cp binutils/gas_configure.tgt binutils-2.24/gas/configure.tgt
-#cp binutils/ld_configure.tgt binutils-2.24/ld/configure.tgt
-#cp binutils/elf_i386_hydrax.sh binutils-2.24/ld/emulparams/elf_i386_hydrax.sh
-#cp binutils/Makefile.am binutils-2.24/ld/Makefile.am
+echo -e "Copying config files..."
+cp binutils/config.sub binutils-2.24/config.sub
+cp binutils/config.bfd binutils-2.24/bfd/config.bfd
+cp binutils/gas_configure.tgt binutils-2.24/gas/configure.tgt
+cp binutils/ld_configure.tgt binutils-2.24/ld/configure.tgt
+cp binutils/elf_i386_hydrax.sh binutils-2.24/ld/emulparams/elf_i386_hydrax.sh
+cp binutils/Makefile.am binutils-2.24/ld/Makefile.am
 #diff -rupN ../binutils-tmp/binutils-2.24/ binutils-2.24/ > binutils-2.24.patch
 
-echo -e "$BULLET Applying binutils-2.24.patch..."
-cd binutils-2.24
-patch -p1 < ../patches/binutils-2.24.patch > /dev/null || last_error=1
-if [ "$last_error" == "1" ]; then
-	echo -e "$REDBUL Error applying patches/binutils-2.24.patch!!"
-	exit -1
-fi
-cd ..
+#echo -e "$BULLET Applying binutils-2.24.patch..."
+#cd binutils-2.24
+#patch -p1 < ../patches/binutils-2.24.patch > /dev/null || last_error=1
+#if [ "$last_error" == "1" ]; then
+#	echo -e "$REDBUL Error applying patches/binutils-2.24.patch!!"
+#	exit -1
+#fi
+#cd ..
 
 echo -e "$BULLET Running automake..."
 cd binutils-2.24/ld
@@ -74,10 +74,18 @@ cd ../..
 if [ "1" == "1" ]; then
 echo -e "\n"
 echo -e "$BULLET Configuring binutils..."
+echo -e "\tlib path:\t$PREFIX/lib"
+echo -e "\tsysroot:\t$PREFIX"
+#exit -1
+
 mkdir -p build/binutils
 cd build/binutils
-../../binutils-2.24/configure --target=$TARGET --prefix="$PREFIX" \
-	--with-sysroot="$PREFIX" --disable-nls --disable-werror || last_error=1
+../../binutils-2.24/configure --target=$TARGET \
+	--prefix=$PREFIX \
+	--with-sysroot=$PREFIX \
+	--libdir=$PREFIX \
+	--with-lib-path=$PREFIX/lib \
+	--disable-nls --disable-werror || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error configuring binutils!"
 	exit -1
@@ -116,23 +124,26 @@ mv -f gmp-6.0.0 gcc-4.8.4/gmp
 mv -f mpfr-3.1.2 gcc-4.8.4/mpfr
 mv -f mpc-1.0.3 gcc-4.8.4/mpc
 
-echo -e "$BULLET Applying gcc-4.8.4.patch..."
-cd gcc-4.8.4
-patch -p1 < ../patches/gcc-4.8.4.patch > /dev/null || last_error=1
-if [ "$last_error" == "1" ]; then
-	echo -e "$REDBUL Error applying patches/gcc-4.8.4.patch!!"
-	exit -1
-fi
-cd ..
+#echo -e "$BULLET Applying gcc-4.8.4.patch..."
+#cd gcc-4.8.4
+#patch -p1 < ../patches/gcc-4.8.4.patch > /dev/null || last_error=1
+#if [ "$last_error" == "1" ]; then
+#	echo -e "$REDBUL Error applying patches/gcc-4.8.4.patch!!"
+#	exit -1
+#fi
+#cd ..
 
-#echo -e "Copying configuration files..."
-#cp -v gcc/config.sub gcc-4.8.4/config.sub
-#cp -v gcc/hydrax.h gcc-4.8.4/gcc/config/hydrax.h
-#cp -v gcc/config.gcc gcc-4.8.4/gcc/config.gcc
-#cp -v gcc/crossconfig.m4 gcc-4.8.4/libstdc++-v3/crossconfig.m4
-#cp -v gcc/config.host gcc-4.8.4/libgcc/config.host
-#cp -v gcc/mkfixinc.sh gcc-4.8.4/fixincludes/mkfixinc.sh
+echo -e "Copying configuration files..."
+cp -v gcc/config.sub gcc-4.8.4/config.sub
+cp -v gcc/hydrax.h gcc-4.8.4/gcc/config/hydrax.h
+cp -v gcc/config.gcc gcc-4.8.4/gcc/config.gcc
+cp -v gcc/crossconfig.m4 gcc-4.8.4/libstdc++-v3/crossconfig.m4
+cp -v gcc/config.host gcc-4.8.4/libgcc/config.host
+cp -v gcc/mkfixinc.sh gcc-4.8.4/fixincludes/mkfixinc.sh
 #exit -1
+
+echo '#undef STANDARD_STARTFILE_PREFIX' >> gcc-4.8.4/gcc/config/hydrax.h
+echo '#define STANDARD_STARTFILE_PREFIX "$PREFIX/i386-hydrax/lib/"' >> gcc-4.8.4/gcc/config/hydrax.h
 
 
 echo -e "$BULLET Running autoconf on gcc-4.8.4/libstdc++-v3..."

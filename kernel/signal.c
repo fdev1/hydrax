@@ -325,7 +325,7 @@ int sigpending(sigset_t *set)
 /*
  * set a signal handler
  */
-int signal(int sig, sighandler_t disp)
+sighandler_t signal(int sig, sighandler_t disp)
 {
 	if (unlikely(sig < 1 || sig > 32 || sig == SIGKILL || sig == SIGSTOP))
 		return EINVAL;

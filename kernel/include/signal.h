@@ -311,7 +311,7 @@ int sigaltstack(const stack_t *, stack_t *);
 /*
  * set a signal handler
  */
-int signal(int sig, sighandler_t handler);
+sighandler_t signal(int sig, sighandler_t handler);
 
 /*
  * Add a signal to the calling process' signal

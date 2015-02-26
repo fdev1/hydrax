@@ -113,7 +113,7 @@ ssyscall1(SYSCALL_SIGHOLD, int, sighold, int, sig);
 ssyscall1(SYSCALL_SIGRELSE, int, sigrelse, int, sig);
 ssyscall1(SYSCALL_SIGIGNORE, int, sigignore, int, sig);
 ssyscall3(SYSCALL_SIGPROCMASK, int, sigprocmask, int, how, const sigset_t*, set, sigset_t*, oldset);
-ssyscall2(SYSCALL_SIGNAL, int, signal, int, sig, sighandler_t, disp);
+ssyscall2(SYSCALL_SIGNAL, sighandler_t, signal, int, sig, sighandler_t, disp);
 ssyscall3(SYSCALL_SIGACTION, int, sigaction, int, sig, const struct sigaction*, act, struct sigaction*, oldact);
 ssyscall1(SYSCALL_SIGPAUSE, int, sigpause, int, sig);
 ssyscall3(SYSCALL_SIGQUEUE, int, sigqueue, pid_t, id, int, sig, const union sigval, value);

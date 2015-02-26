@@ -8,8 +8,10 @@ build-binutils/*
 build-gcc/*
 
 bin/*
-i386-elf/*
+i386-hydrax/*
+include/*
 share/*
 binutils-2.24/*
 lib/*
 libexec/*
+usr/

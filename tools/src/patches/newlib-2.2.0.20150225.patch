@@ -1,0 +1,228 @@
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/config.sub newlib-2.2.0.20150225/config.sub
+--- ../newlib-tmp/newlib-2.2.0.20150225/config.sub	2014-12-16 15:47:40.000000000 -0500
++++ newlib-2.2.0.20150225/config.sub	2015-02-25 23:03:00.000000000 -0500
+@@ -1373,7 +1373,7 @@ case $os in
+ 	      | -hpux* | -unos* | -osf* | -luna* | -dgux* | -auroraux* | -solaris* \
+ 	      | -sym* | -kopensolaris* | -plan9* \
+ 	      | -amigaos* | -amigados* | -msdos* | -newsos* | -unicos* | -aof* \
+-	      | -aos* | -aros* \
++	      | -aos* | -aros* | -hydrax* \
+ 	      | -nindy* | -vxsim* | -vxworks* | -ebmon* | -hms* | -mvs* \
+ 	      | -clix* | -riscos* | -uniplus* | -iris* | -rtu* | -xenix* \
+ 	      | -hiux* | -386bsd* | -knetbsd* | -mirbsd* | -netbsd* \
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/configure.host newlib-2.2.0.20150225/newlib/configure.host
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/configure.host	2015-01-21 13:27:45.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/configure.host	2015-02-25 23:03:00.000000000 -0500
+@@ -444,6 +444,10 @@ case "${host}" in
+   h8500-*-elf*)
+ 	sys_dir=h8500hms
+ 	;;
++  i[3-7]86-*-hydrax*)
++  	sys_dir=hydrax
++	newlib_cflags="${newlib_cflags} -DSIGNAL_PROVIDED"
++	;;
+   i[34567]86-*-rdos*)
+ 	sys_dir=rdos
+ 	newlib_cflags="${newlib_cflags} -DMISSING_SYSCALL_NAMES"
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/include/sys/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/include/sys/config.h	2015-01-14 04:25:15.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/libc/include/sys/config.h	2015-02-25 23:03:00.000000000 -0500
+@@ -244,6 +244,11 @@
+ #define _REENT_GLOBAL_ATEXIT
+ #endif
+ 
++#if 1 || defined(__hydrax__)
++#define __FILENAME_MAX__ 255
++#define _READ_WRITE_RETURN_TYPE _ssize_t
++#endif
++
+ #ifndef __EXPORT
+ #define __EXPORT
+ #endif
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/configure.in	2015-01-20 07:27:30.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/libc/sys/configure.in	2015-02-25 23:03:00.000000000 -0500
+@@ -30,6 +30,7 @@ if test -n "${sys_dir}"; then
+ 	epiphany) AC_CONFIG_SUBDIRS(epiphany) ;;
+ 	h8300hms) AC_CONFIG_SUBDIRS(h8300hms) ;;
+ 	h8500hms) AC_CONFIG_SUBDIRS(h8500hms) ;;
++	hydrax) AC_CONFIG_SUBDIRS(hydrax) ;;
+ 	linux) AC_CONFIG_SUBDIRS(linux) ;;
+ 	m88kbug) AC_CONFIG_SUBDIRS(m88kbug) ;;
+ 	mmixware) AC_CONFIG_SUBDIRS(mmixware) ;;
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in	1969-12-31 19:00:00.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in	2015-02-25 23:03:00.000000000 -0500
+@@ -0,0 +1,8 @@
++AC_PREREQ(2.59)
++AC_INIT([newlib], [NEWLIB_VERSION])
++AC_CONFIG_SRCDIR([crt0.S])
++AC_CONFIG_AUX_DIR(../../../..)
++NEWLIB_CONFIGURE(../../..)
++AC_CONFIG_FILES([Makefile])
++AC_OUTPUT
++
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S	1969-12-31 19:00:00.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S	2015-02-25 23:03:00.000000000 -0500
+@@ -0,0 +1,8 @@
++.global _start
++.extern main
++.extern exit
++_start:
++	call main;
++	call exit;
++1:	jmp 1b;
++
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am	1969-12-31 19:00:00.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am	2015-02-25 23:03:00.000000000 -0500
+@@ -0,0 +1,16 @@
++## Process this file with automake to generate Makefile.in
++
++#AUTOMAKE_OPTIONS = cygnus
++
++AM_CPPFLAGS  = $(NEWLIB_CFLAGS) $(CROSS_CFLAGS) $(TARGET_CFLAGS)
++
++libsyscalls_la_LDFLAGS = -Xcompiler -nostdlib
++
++noinst_LIBRARIES = lib.a
++lib_a_SOURCES = syscalls.c crt0.S
++lib_a_CFLAGS = $(AM_CFLAGS)
++noinst_DATA =
++
++include $(srcdir)/../../../Makefile.shared
++
++
+diff -rupN ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
+--- ../newlib-tmp/newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c	1969-12-31 19:00:00.000000000 -0500
++++ newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c	2015-02-25 23:03:00.000000000 -0500
+@@ -0,0 +1,128 @@
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <sys/utsname.h>
++#include <sys/times.h>
++#include <sys/errno.h>
++#include <sys/time.h>
++#include <unistd.h>
++#include <syscall.h>
++#include <stdio.h>
++#include <stdarg.h>
++#include <errno.h>
++#include <signal.h>
++#include <pthread.h>
++
++/*
++ * System call asm macros
++ */
++#define syscall0(num)			\
++	asm __volatile__(			\
++		"int $0x30;" : : "a" (num))
++#define syscall1(num, argb)		\
++	asm __volatile__(			\
++		"int $0x30;" : : "a" (num), "b" (argb))
++#define syscall2(num, argb, argc)	\
++	asm __volatile__(			\
++		"int $0x30;" : : "a" (num), "b" (argb), "c" (argc))
++#define syscall3(num, argb, argc, argd)	\
++	asm __volatile__(			\
++		"int $0x30;" : : "a" (num), "b" (argb), "c" (argc), "d" (argd))
++#define syscall4(num, argb, argc, argd, arge)	\
++	asm __volatile__(			\
++		"int $0x30;" : : "a" (num), "b" (argb), "c" (argc), "d" (argd), "S" (arge))
++		
++		
++#define ssyscall0(num, rettype, name)		\
++rettype __##name(void)					\
++{									\
++	syscall0(num);						\
++}									\
++rettype name(void) __attribute__((weak, alias("__" #name)))
++
++#define ssyscall1(num, rettype, name, arg1type, arg1)		\
++rettype __##name(arg1type arg1)						\
++{												\
++	syscall1(num, arg1);							\
++}												\
++rettype name(arg1type arg1) __attribute__((weak, alias("__" #name)))
++
++#define ssyscall2(num, rettype, name, arg1type, arg1, arg2type, arg2)	\
++rettype __##name(arg1type arg1, arg2type arg2)				\
++{														\
++	syscall2(num, arg1, arg2);								\
++}														\
++rettype name(arg1type arg1, arg2type arg2) __attribute__((weak, alias("__" #name)))
++
++#define ssyscall3(num, rettype, name, arg1type, arg1, arg2type, arg2, arg3type, arg3)	\
++rettype __##name(arg1type arg1, arg2type arg2, arg3type arg3)				\
++{																\
++	syscall3(num, arg1, arg2, arg3);									\
++}																\
++rettype name(arg1type arg1, arg2type arg2, arg3type arg3)					\
++	__attribute__((weak, alias("__" #name)))
++
++#define ssyscall4(num, rettype, name, arg1type, arg1, arg2type, arg2, arg3type, arg3, arg4type, arg4)	\
++rettype __##name(arg1type arg1, arg2type arg2, arg3type arg3, arg4type arg4)				\
++{																\
++	syscall4(num, arg1, arg2, arg3, arg4);									\
++}																\
++rettype name(arg1type arg1, arg2type arg2, arg3type arg3, arg4type arg4)					\
++	__attribute__((weak, alias("__" #name)))
++
++char **environ;
++
++ssyscall1(SYSCALL_EXIT, int, exit, int, status);
++ssyscall1(SYSCALL_CLOSE, int, close, int, fd);
++ssyscall3(SYSCALL_EXECVE, int, execve, const char*, path, char *const*, argv, char *const*, envp);
++ssyscall0(SYSCALL_FORK, int, fork);
++ssyscall0(SYSCALL_GETPID, pid_t, getpid);
++ssyscall1(SYSCALL_ISATTY, int, isatty, int, fd);
++ssyscall2(SYSCALL_KILL, int, kill, pid_t, pid, int, signum);
++ssyscall2(SYSCALL_OPEN, int, open, const char*, path, int, flags);
++ssyscall3(SYSCALL_READ, ssize_t, read, int, fd, void*, buf, size_t, count);
++ssyscall2(SYSCALL_STAT, int, stat, const char*, path, struct stat*, buf);
++ssyscall1(SYSCALL_WAIT, pid_t, wait, int*, status);
++ssyscall3(SYSCALL_WRITE, ssize_t, write, int, fd, const void*, buf, size_t, count);
++ssyscall2(SYSCALL_SIGNAL, sighandler_t, signal, int, sig, sighandler_t, disp);
++
++int gettimeofday(struct timeval *p, void *z)
++{
++	return -1;
++}
++
++clock_t times(struct tms *buf)
++{
++	return -1;
++}
++
++void* sbrk(ptrdiff_t incr)
++{
++	return (void*) -1;
++}
++
++off_t lseek(int fd, off_t offset, int whence)
++{
++	return -1;
++}
++
++int link(const char *old, const char *new)
++{
++	return -1;
++}
++
++int unlink(const char *name)
++{
++	return -1;
++}
++
++int fstat(int fd, struct stat *st)
++{
++	return -1;
++}
++
++void _exit(int status)
++{
++	exit(0);
++}
++
++

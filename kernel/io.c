@@ -23,6 +23,7 @@
 #include <semaphore.h>
 #include <assert.h>
 #include <errno.h>
+#include <printk.h>
 #include "config.inc"
 
 static inline bool check_file_permissions(vfs_node_t* node, uint32_t mask)
@@ -252,7 +253,7 @@ static size_t pipe_write(vfs_node_t* node, uint32_t offset, uint32_t len, uint8_
 /*
  * Rewind file descriptor
  */
-int rewind(int fd)
+int rewindfd(int fd)
 {
 	file_t *f;
 	f = get_file_descriptor(fd);
@@ -463,7 +464,7 @@ int pipe(int pipefd[2])
 /*
  * opens a file and returns a file descriptor
  */
-int open(const char *pathname, int flags)
+int open(const char *pathname, int flags, ...)
 {
 	file_t *f;
 	vfs_node_t *node;
@@ -528,6 +529,9 @@ int readdir(unsigned int fd, struct dirent *dirent, unsigned int count)
 {
 	int i = 0;
 	file_t *f; 
+	
+	printk(7, "Hello");
+	
 	f = get_file_descriptor(fd);
 	if (f == NULL)
 		return EBADF;
@@ -544,7 +548,7 @@ int readdir(unsigned int fd, struct dirent *dirent, unsigned int count)
 /*
  * Writes to a file descriptor
  */
-size_t write(int fd, const void* buf, size_t count)
+ssize_t write(int fd, const void* buf, size_t count)
 {
 	file_t *f;
 	size_t bytes_written = 0;
@@ -564,7 +568,7 @@ size_t write(int fd, const void* buf, size_t count)
 /*
  * Reads from the file system
  */
-size_t read(int fd, void *buf, size_t count)
+ssize_t read(int fd, void *buf, size_t count)
 {
 	file_t *f;
 	size_t bytes_read = 0;

@@ -16,7 +16,15 @@
 #ifndef __DIRENT_H__
 #define __DIRENT_H__
 
-#include <arch/arch.h>
+#include <stdint.h>
+
+/*
+ * TODO: It should be FILENAME_MAX and it goes
+ * in stdio.h
+ */
+#ifndef MAX_FILENAME
+#define MAX_FILENAME 255
+#endif
 
 /*
  * dirent structure

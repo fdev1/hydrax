@@ -119,19 +119,24 @@ ssyscall1(SYSCALL_PTHREAD_EXIT, int, pthread_exit, int, status_code);
 ssyscall1(SYSCALL_UNAME, int, uname, struct utsname*, buf);
 
 
-ssyscall1(SYSCALL_EXIT, int, exit, int, status);
+ssyscall1(SYSCALL_EXIT, void, exit, int, status);
 ssyscall1(SYSCALL_CLOSE, int, close, int, fd);
 ssyscall3(SYSCALL_EXECVE, int, execve, const char*, path, char *const*, argv, char *const*, envp);
 ssyscall0(SYSCALL_FORK, int, fork);
 ssyscall0(SYSCALL_GETPID, pid_t, getpid);
 ssyscall1(SYSCALL_ISATTY, int, isatty, int, fd);
 ssyscall2(SYSCALL_KILL, int, kill, pid_t, pid, int, signum);
-ssyscall2(SYSCALL_OPEN, int, open, const char*, path, int, flags);
+ssyscall3(SYSCALL_OPEN, int, sysopen, const char*, path, int, flags, int, mode);
 ssyscall3(SYSCALL_READ, ssize_t, read, int, fd, void*, buf, size_t, count);
 ssyscall2(SYSCALL_STAT, int, stat, const char*, path, struct stat*, buf);
 ssyscall1(SYSCALL_WAIT, pid_t, wait, int*, status);
 ssyscall3(SYSCALL_WRITE, ssize_t, write, int, fd, const void*, buf, size_t, count);
 ssyscall2(SYSCALL_SIGNAL, sighandler_t, signal, int, sig, sighandler_t, disp);
+
+int open(const char *path, int flags, ...)
+{
+	return sysopen(path, flags, 0);
+}
 
 int gettimeofday(struct timeval *p, void *z)
 {

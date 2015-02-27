@@ -154,8 +154,13 @@ cd ../..
 echo -e "$BULLET Configuring gcc..."
 mkdir -p build/gcc
 cd build/gcc
-../../gcc-4.8.4/configure --target=$TARGET --prefix="$PREFIX" \
-	--with-sysroot="$PREFIX" --disable-multilib --disable-nls --enable-languages=c || last_error=1
+../../gcc-4.8.4/configure --target=$TARGET \
+	--prefix="$PREFIX" \
+	--with-sysroot="$PREFIX" \
+	--disable-multilib \
+	--disable-nls \
+	--disable-wchar_t \
+	--enable-languages=c || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error in configure gcc!"
 	exit -1

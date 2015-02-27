@@ -12,13 +12,13 @@
 # permission from the author.
 # 
 
-CC=../tools/bin/i386-hydrax-gcc
-AS=../tools/bin/i386-hydrax-as
-LD=../tools/bin/i386-hydrax-ld
+#CC=../tools/bin/i386-hydrax-gcc
+#AS=../tools/bin/i386-hydrax-as
+#LD=../tools/bin/i386-hydrax-ld
 
-CFLAGS=-g -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
+CFLAGS=-g -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
 	-DKERNEL_CODE -Iinclude
-ASFLAGS=-g
+ASFLAGS=-g --32
 LDFLAGS=-melf_i386 -Tarch/x86/hydrax.ld -Map hydrax.map
 
 

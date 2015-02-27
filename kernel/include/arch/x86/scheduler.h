@@ -16,7 +16,7 @@
 #ifndef __ARCH_SCHEDULER_H__
 #define __ARCH_SCHEDULER_H__
 
-#include <arch/arch.h>
+#include <stdint.h>
 #include <mmu.h>
 
 /*

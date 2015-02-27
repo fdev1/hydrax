@@ -17,6 +17,7 @@
 #include <isr.h>
 #include <printk.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define DEBUG_ISR 		(0)
 

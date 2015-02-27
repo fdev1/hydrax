@@ -48,7 +48,7 @@ typedef unsigned int pintptr_t;	/* physical pointer size */
  * Stores the state of the execution environment
  * right before an interrupt.
  */
-typedef struct
+typedef struct __registers
 {
 	uint32_t ds;
 	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;

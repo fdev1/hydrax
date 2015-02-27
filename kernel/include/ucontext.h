@@ -16,7 +16,7 @@
 #ifndef __UCONTEXT_H__
 #define __UCONTEXT_H__
 
-#include <arch/arch.h>
+#include <stdint.h>
 #include <arch/scheduler.h>
 
 typedef task_state_t mcontext_t;

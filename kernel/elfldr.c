@@ -127,7 +127,7 @@ intptr_t elf_load(int fd)
 	}
 
 	/* read elf header */
-	rewind(fd);
+	rewindfd(fd);
 	if (sizeof(Elf32_Ehdr) > 
 		read(fd, (unsigned char*) elf_hdr, sizeof(Elf32_Ehdr)))
 	{

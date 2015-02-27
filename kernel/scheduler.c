@@ -290,7 +290,7 @@ vfs_node_t *scheduler_getcwd(void)
 /*
  * exit the current task
  */
-int exit(int exit_code)
+void __attribute__((__noreturn__)) exit(int exit_code) 
 {
 	task_t *tmp, *parent;
 	assert(current_task->id != 0);
@@ -381,7 +381,7 @@ int exit(int exit_code)
 	 */
 	schedule_prelocked();
 	assert(0);
-	return exit_code;
+	while (1);
 }
 
 /*

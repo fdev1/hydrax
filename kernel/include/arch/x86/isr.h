@@ -16,7 +16,9 @@
 #ifndef __ARCH_ISR_H__
 #define __ARCH_ISR_H__
 
-#include <arch/arch.h>
+struct __registers;
+
+#include <stdint.h>
 
 #define IRQ0 32
 #define IRQ1 33
@@ -39,17 +41,19 @@
 /*
  * ISR handler function type;
  */
-typedef void (*isr_t)(registers_t*);
+typedef void (*isr_t)(struct __registers*);
 
 /*
  * clear interrupt flag
  */
-static inline void arch_clear_interrupt(registers_t *regs)
+#if defined(KERNEL_CODE)
+static inline void arch_clear_interrupt(struct __registers *regs)
 {
         if (regs->int_no >= 40)
 		outb(0xA0, 0x20);
 	outb(0x20, 0x20);
 }
+#endif
 
 #endif
 

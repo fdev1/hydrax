@@ -1,4 +1,4 @@
-#include <arch/stdarg.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
@@ -10,6 +10,8 @@
 #include "args.h"
 
 void syscall_test(void);
+
+#define MAX_PATH 255
 
 /*
  * NOTE: This is not being initialized to zero, probably a bug with the
@@ -39,7 +41,7 @@ static char *readline(void)
 				case '\n' :
 				case '\r' :
 					putchar('\n');
-					linebuf[i] = NULL;
+					linebuf[i] = 0;
 					return linebuf;
 				default :
 					putchar(c);
@@ -60,7 +62,7 @@ static void parse_command(char *cmd)
 	char buf[50];
 	int arg_c;
 
-	while (*pcmd != NULL)
+	while (*pcmd != 0)
 	{
 		if (*pcmd != ' ')
 			isblank=0;
@@ -101,7 +103,7 @@ static void parse_command(char *cmd)
 
 		int i;
 		struct dirent entries[100];
-		int rootfd = open(path, NULL);
+		int rootfd = open(path, 0);
 		if (rootfd == -1)
 		{
 			printf("error: could not open directory.");
@@ -120,18 +122,20 @@ static void parse_command(char *cmd)
 			bb = b;;
 			struct stat st;
 			size_t filesz;
-			char type = '-';
+			char type[2];
+			type[0] = '-';
+			type[1] = 0;
 
-			while (*p != NULL)
+			while (*p != 0)
 				*bb++ = *p++;
 
 			if (*(p - 1) != '/')
 				*bb++ = '/';
 			
 			p = entries[i].name;
-			while (*p != NULL)
+			while (*p != 0)
 				*bb++ = *p++;
-			*bb++ = NULL;
+			*bb++ = 0;
 	
 			int ret = stat(b, &st);
 			if (ret < 0)
@@ -142,16 +146,17 @@ static void parse_command(char *cmd)
 			filesz = st.st_size;
 
 			if (S_ISDIR(st.st_mode))
-				type = 'd';
+			{
+				type[0] = 'd';
+			}
 			else if (S_ISCHR(st.st_mode))
-				type = 'c';
+				type[0] = 'c';
 
-			putchar(type);
-			printf("-------- ", type);
+			printf(type);
+			printf("-------- ");
 			printf("%i:%i\t", st.st_uid, st.st_gid);
 			printf("%i\t", filesz);
-			printf(entries[i].name, strlen(entries[i].name));
-			putchar('\n');
+			printf("%s\n", entries[i].name);
 
 		}
 		putchar('\n');
@@ -196,7 +201,7 @@ static void parse_command(char *cmd)
 			return;
 		}
 		path = argv(cmd, 1, buf);
-		fd = open(path, NULL);
+		fd = open(path, 0);
 		if (fd < 0)
 		{
 			printf("Error opening file: %s\n", path);
@@ -205,7 +210,7 @@ static void parse_command(char *cmd)
 
 		while (len = read(fd, filebuf, 1024)) 
 		{
-			filebuf[len] = NULL;
+			filebuf[len] = 0;
 			printf("%s", filebuf);
 			if (len < 1024)
 				break;
@@ -244,7 +249,7 @@ static void parse_command(char *cmd)
 			return;
 		}
 		value = ++arg_v;
-		*name = NULL;
+		*name = 0;
 		if (setenv(buf, value, 1) == 0)
 			return;
 	}
@@ -286,7 +291,7 @@ static void parse_command(char *cmd)
 			{
 				int exit_code;
 				char buffy[10];
-				waitpid(pid, &exit_code, NULL);
+				waitpid(pid, &exit_code, 0);
 				setenv("!", itoa(exit_code, buffy, 10), 1);
 			}
 		}
@@ -298,7 +303,7 @@ static void parse_command(char *cmd)
  */
 int main(int argc, char **argv)
 {
-	printf("\nHydrax Shell (pid=%i argc=%x) v0.1\n", getpid(), argc);
+	printf("\nHydrax Shell (pid=%i argc=%i) v0.1\n", getpid(), argc);
 	
 	if (0 && argc)
 	{

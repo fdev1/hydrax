@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <io.h>
+#include <dirent.h>
 
 /*
  * These are used to enable debug output
@@ -1161,7 +1162,7 @@ int brk(void *addr)
 	return ENOSYS;
 }
 
-int sbrk(intptr_t inc)
+void *sbrk(intptr_t inc)
 {
-	return ENOSYS;
+	return (void*) ENOSYS;
 }

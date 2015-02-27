@@ -79,15 +79,15 @@ ssyscall0(SYSCALL_GETEGID, gid_t, getegid);
 ssyscall0(SYSCALL_YIELD, void, yield);
 ssyscall0(SYSCALL_VFORK, int, vfork);
 ssyscall3(SYSCALL_CHOWN, int, chown, const char*, path, uid_t, uid, gid_t, gid);
-ssyscall3(SYSCALL_WRITE, size_t, write, int, fd, const void*, buf, size_t, count);
-ssyscall3(SYSCALL_READ, size_t, read, int, fd, void*, buf, size_t, count);
+ssyscall3(SYSCALL_WRITE, ssize_t, write, int, fd, const void*, buf, size_t, count);
+ssyscall3(SYSCALL_READ, ssize_t, read, int, fd, void*, buf, size_t, count);
 ssyscall1(SYSCALL_CLOSE, int, close, int, fd);
-ssyscall1(SYSCALL_EXIT, int, exit, int, status);
+ssyscall1(SYSCALL_EXIT, void, exit, int, status);
 ssyscall1(SYSCALL_CLONE, int, clone, void*, stack);
 ssyscall1(SYSCALL_DUP, int, dup, int, fd);
 ssyscall1(SYSCALL_PIPE, int, pipe, int*, pipefd);
 ssyscall2(SYSCALL_DUP2, int, dup2, int, oldfd, int, newfd);
-ssyscall2(SYSCALL_OPEN, int, open, const char*, path, int, flags);
+ssyscall3(SYSCALL_OPEN, int, sysopen, const char*, path, int, flags, int, mode);
 ssyscall2(SYSCALL_KILL, int, kill, pid_t, pid, int, signum);
 ssyscall3(SYSCALL_READDIR, int, readdir, unsigned int, fd, struct dirent*, dirent, unsigned int, count);
 ssyscall2(SYSCALL_STAT, int, stat, const char*, path, struct stat*, buf);
@@ -123,6 +123,11 @@ ssyscall2(SYSCALL_PTHREAD_KILL, int, pthread_kill, pthread_t, thread, int, sig);
 ssyscall1(SYSCALL_PTHREAD_EXIT, int, pthread_exit, int, status_code);
 ssyscall1(SYSCALL_ISATTY, int, isatty, int, fd);
 ssyscall1(SYSCALL_UNAME, int, uname, struct utsname*, buf);
+
+int open(const char *path, int oflag, ... )
+{
+	return sysopen(path, oflag, 0);
+}
 
 int ioctl(int fd, unsigned int request, ...)
 {

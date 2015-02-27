@@ -12,6 +12,15 @@ PATH="$SCRIPTPATH/bin:$PATH"
 
 last_error=0
 
+
+
+echo -e "$BULLET Copying system includes..."
+scripts/copy_headers.sh > /dev/null || last_error=1
+if [ "$last_error" == "1" ]; then
+        echo -e "Error copying headers!"
+        exit -1
+fi
+
 mkdir -p tmp
 cd tmp
 echo -e "$BULLET Fetching ftp://sourceware.org/pub/newlib/newlib-2.2.0.20150225.tar.gz..."
@@ -48,6 +57,7 @@ mkdir -p newlib/libc/sys/hydrax/include/sys
 cp ../../../kernel/include/dirent.h newlib/libc/sys/hydrax/include/sys/dirent.h
 cp ../../../kernel/include/signal.h newlib/libc/sys/hydrax/include/sys/signal.h
 cp ../../../kernel/include/pthread.h newlib/libc/sys/hydrax/include/sys/pthread.h
+cp ../../../kernel/include/unistd.h newlib/libc/sys/hydrax/include/sys/unistd.h
 cd ../
 
 echo -e "$BULLET Running autoconf..."

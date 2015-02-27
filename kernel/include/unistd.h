@@ -28,13 +28,16 @@
 #define SEEK_CUR				(0x2)
 #define SEEK_END				(0x3)
 
-#include <vfs.h>
+#define STDERR_FILENO   2 	/* used by newlib */
+
+/* #include <vfs.h> */
 #include <sys/stat.h>
+#include <dirent.h>
 
 /*
  * Opens a file descriptor
  */
-int open(const char *pathname, int flags);
+int open(const char *pathname, int flags, ...);
 
 /*
  * Closes a file descriptor
@@ -49,12 +52,12 @@ int readdir(unsigned int fd, struct dirent *dirent, unsigned int count);
 /*
  * Writes to a file descriptor
  */
-size_t write(int fd, const void* buf, size_t count);
+ssize_t write(int fd, const void* buf, size_t count);
 
 /*
  * Reads from a file descriptor
  */
-size_t read(int fd, void* buf, size_t count);
+ssize_t read(int fd, void* buf, size_t count);
 
 /*
  * Get information about a file.
@@ -86,7 +89,7 @@ int clone(void *stack);
 /*
  * exit the current task
  */
-int exit(int exit_code);
+void exit(int exit_code) __attribute__ ((noreturn));
 
 /*
  * gets the PID of the running process
@@ -265,7 +268,7 @@ int brk(void *addr);
 /*
  * Change data segment size
  */
-int sbrk(intptr_t inc);
+void *sbrk(intptr_t inc);
 
 /*
  * Reposition read/write file offset
@@ -291,7 +294,7 @@ void pause(void);
 /*
  * Rewind file descriptor
  */
-int rewind(int fd);
+int rewindfd(int fd);
 
 #endif
 

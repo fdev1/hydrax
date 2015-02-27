@@ -16,7 +16,7 @@
 #ifndef __SIGNAL_H__
 #define __SIGNAL_H__
 
-#include <arch/arch.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <time.h>
 #include <errno.h>

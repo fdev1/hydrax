@@ -16,7 +16,7 @@
 #ifndef __SYSCALL_H__
 #define __SYSCALL_H__
 
-#include <arch/arch.h>
+#include <stdint.h>
 
 /* 
  * system calls

@@ -37,14 +37,14 @@ tar -xf ../tmp/newlib-2.2.0.20150225.tar.gz
 
 echo -e "$BULLET copying config files..."
 mkdir -p newlib-2.2.0.20150225/newlib/libc/sys/hydrax/
-cp -v newlib/config.sub newlib-2.2.0.20150225/config.sub
-cp -v newlib/configure.host newlib-2.2.0.20150225/newlib/configure.host
-cp -v newlib/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
-cp -v newlib/crt0.S newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S
-cp -v newlib/hydrax_configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
-cp -v newlib/hydrax_Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
-cp -v newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
-cp -v newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
+cp newlib/config.sub newlib-2.2.0.20150225/config.sub
+cp newlib/configure.host newlib-2.2.0.20150225/newlib/configure.host
+cp newlib/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
+cp newlib/crt0.S newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S
+cp newlib/hydrax_configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
+cp newlib/hydrax_Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
+cp newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
+cp newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
 
 echo -e "$BULLET Applying newlib-2.2.0.20150225.patch..."
 cd newlib-2.2.0.20150225
@@ -58,27 +58,29 @@ cp ../../../kernel/include/dirent.h newlib/libc/sys/hydrax/include/sys/dirent.h
 cp ../../../kernel/include/signal.h newlib/libc/sys/hydrax/include/sys/signal.h
 cp ../../../kernel/include/pthread.h newlib/libc/sys/hydrax/include/sys/pthread.h
 cp ../../../kernel/include/unistd.h newlib/libc/sys/hydrax/include/sys/unistd.h
+cp ../../../kernel/include/sys/stat.h newlib/libc/sys/hydrax/include/sys/stat.h
+cp ../../../kernel/include/sys/types.h newlib/libc/sys/hydrax/include/sys/types.h
 cd ../
 
 echo -e "$BULLET Running autoconf..."
 cd newlib-2.2.0.20150225/newlib/libc/sys
-autoconf || last_error=1
+autoconf > /dev/null 2> /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Autoconf failed on newlib/libc/sys!!"
 	exit -1
 fi
 cd hydrax
-aclocal-1.11 -I../../.. -I../../../.. || last_error=1
+aclocal-1.11 -I../../.. -I../../../.. > /dev/null 2> /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Aclocal failed on newlib/libc/sys/hydrax"
 	exit -1
 fi
-autoconf-2.64 || last_error=1
+autoconf-2.64 > /dev/null 2> /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Autoreconf failed on newlib/libc/sys/hydrax!!"
 	exit -1
 fi
-automake-1.11 --add-missing || last_error=1
+automake-1.11 --add-missing > /dev/null 2> /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Automake failed!!"
 	exit -1

@@ -21,8 +21,10 @@
 #define MODE_TYPE_MOUNT			(0x4)
 #define MODE_TYPE_CHARDEVICE		(0x8)
 
+#if 0
 #define S_ISDIR(mode)			(mode & MODE_TYPE_DIRECTORY)
 #define S_ISCHR(mode)			(mode & MODE_TYPE_CHARDEVICE)
+#endif
 
 #define SEEK_SET 				(0x1)
 #define SEEK_CUR				(0x2)
@@ -31,8 +33,13 @@
 #define STDERR_FILENO   2 	/* used by newlib */
 
 /* #include <vfs.h> */
+#include <_ansi.h>
 #include <sys/stat.h>
 #include <dirent.h>
+
+typedef unsigned long size_t;
+typedef long ssize_t;
+
 
 /*
  * Opens a file descriptor

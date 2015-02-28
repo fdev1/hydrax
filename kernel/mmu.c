@@ -19,6 +19,7 @@
 #define KERNEL_CODE
 
 #include <arch/arch.h>
+#include <stdarg.h>
 #include <mmu.h>
 #include <printk.h>
 #include <memory.h>
@@ -334,7 +335,7 @@ static intptr_t kalloc_premmu(uint32_t sz, uint32_t virt, uint32_t *phys, uint32
  * 
  * TODO: This needs to be cleaned up soon as it's getting messy.
  */
-intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
+intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags, ...)
 {
 	page_t *page;
 	page_directory_t *dir;
@@ -452,6 +453,19 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags)
 		buf->address = vaddr;
 		buf->pages = (sz + 0xFFF) / 0x1000;
 		buf->next = NULL;
+		
+		if ((flags & KALLOC_OPTN_MMAP) != 0)
+		{
+			va_list ap;
+			va_start(ap, flags);
+			buf->mmap = va_arg(ap, mmap_info_t*);
+			va_end(ap);
+		}
+		else
+		{
+			buf->mmap = NULL;
+		}
+
 		while (*buffers != NULL)
 			buffers = &(*buffers)->next;
 		*buffers = buf;
@@ -506,6 +520,20 @@ void kfree(void* ptr)
 		memmap_clear_page(memmap, addr);
 		addr += 0x1000;
 	}	
+	
+	if ((*tmp)->mmap != NULL)
+	{
+		mmap_info_t *mmap, **mmap_parent;
+		mmap = current_task->mmaps;
+		mmap_parent = &current_task->mmaps;
+		while (mmap != (*tmp)->mmap)
+		{
+			mmap_parent = &mmap->next;
+			mmap = mmap->next;
+		}
+		*mmap_parent = mmap->next;
+		free((void*) mmap);
+	}
 	
 	if (parent != NULL)
 	{

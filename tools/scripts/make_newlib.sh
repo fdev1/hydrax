@@ -9,10 +9,7 @@ PREFIX="$SCRIPTPATH"
 TARGET=i386-hydrax
 MAKE_OPTS=-j2
 PATH="$SCRIPTPATH/bin:$PATH"
-
 last_error=0
-
-
 
 echo -e "$BULLET Copying system includes..."
 scripts/copy_headers.sh > /dev/null || last_error=1
@@ -53,6 +50,9 @@ cd newlib-2.2.0.20150225
 #	echo -e "$REDBUL Could not apply patch!!"
 #	exit -1
 #fi
+
+# Copy required system headers to hydrax directory
+#
 mkdir -p newlib/libc/sys/hydrax/include/sys
 cp ../../../kernel/include/dirent.h newlib/libc/sys/hydrax/include/sys/dirent.h
 cp ../../../kernel/include/signal.h newlib/libc/sys/hydrax/include/sys/signal.h
@@ -60,6 +60,7 @@ cp ../../../kernel/include/pthread.h newlib/libc/sys/hydrax/include/sys/pthread.
 cp ../../../kernel/include/unistd.h newlib/libc/sys/hydrax/include/sys/unistd.h
 cp ../../../kernel/include/sys/stat.h newlib/libc/sys/hydrax/include/sys/stat.h
 cp ../../../kernel/include/sys/types.h newlib/libc/sys/hydrax/include/sys/types.h
+cp ../../../kernel/include/errno.h newlib/libc/sys/hydrax/include/sys/errno.h
 cd ../
 
 echo -e "$BULLET Running autoconf..."

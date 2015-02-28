@@ -20,6 +20,7 @@
 #include <kheap.h>
 #include <scheduler.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 static vfs_node_t *vfs_root = NULL;
 static vfs_node_t *vfs_root_mount = NULL;

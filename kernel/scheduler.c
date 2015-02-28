@@ -441,7 +441,10 @@ int exec(char *path, ...)
 void __usermode user_entry(
 	const int (*main_func)(int, char**), int argc, char **argv)
 {
-	exit(main_func(argc, argv));
+	/* exit(main_func(argc, argv)); */
+	int ret;
+	ret = main_func(argc, argv);
+	exit(ret);
 }
 
 /*

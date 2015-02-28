@@ -530,8 +530,6 @@ int readdir(unsigned int fd, struct dirent *dirent, unsigned int count)
 	int i = 0;
 	file_t *f; 
 	
-	printk(7, "Hello");
-	
 	f = get_file_descriptor(fd);
 	if (f == NULL)
 		return EBADF;

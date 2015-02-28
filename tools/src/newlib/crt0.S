@@ -2,7 +2,7 @@
 .extern main
 .extern exit
 _start:
-	call main;
+	jmp main;
 	call exit;
-1:	jmp 1b;
+	ret;
 

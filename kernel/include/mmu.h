@@ -62,12 +62,29 @@
 #define ALLOC_FRAME_ALLOC_PHYS	(0x0040)	/* allocate a physical page and map it */
 
 /*
+ * Used internally by the kernel to track mapped
+ * files.
+ */
+typedef struct __mmap_info
+{
+	void *addr;
+	size_t len;
+	int flags;
+	int prot;
+	off_t offset;
+	int fd;
+	struct __mmap_info *next;
+}
+mmap_info_t;
+
+/*
  * Structure used to track allocated pages.
  */
 typedef struct __buffer
 {
 	intptr_t address;
 	uint32_t pages;
+	struct __mmap_info *mmap;
 	struct __buffer *next;
 }
 buffer_t;
@@ -143,7 +160,7 @@ void mmu_switch_to_kernel_directory(void);
  * address that the page was mapped to.
  * If the KALLOC_OPTN_KERNEL is specified
  */
-intptr_t kalloc(uint32_t sz, uint32_t virt, uint32_t *phys, uint32_t flags);
+intptr_t kalloc(uint32_t sz, uint32_t virt, uint32_t *phys, uint32_t flags, ...);
 
 /*
  * free memory allocated by kalloc
@@ -153,7 +170,8 @@ void kfree(void*);
 /*
  * Clone a page directory
  */
-page_directory_t *mmu_clone_directory(page_directory_t *src, intptr_t *physical, uint32_t flags);
+page_directory_t *mmu_clone_directory(
+	page_directory_t *src, intptr_t *physical, uint32_t flags);
 
 /*
  * Destroy a page directory

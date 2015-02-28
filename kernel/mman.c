@@ -86,8 +86,8 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off)
 	 * space but don't map them. They will be mapped on access
 	 * by the MMU driver.
 	 */
-	ap = (void*) kalloc(len + ((intptr_t) addr & (MMU_PAGE_SIZE-1)), 
-					(intptr_t) addr & ~(MMU_PAGE_SIZE-1), NULL, kflags);
+	ap = (void*) kalloc(len + ((intptr_t) addr & (MMU_PAGE_SIZE - 1)), 
+		(intptr_t) addr & ~(MMU_PAGE_SIZE - 1), NULL, kflags, mmap_info);
 	if (unlikely(ap == NULL))
 	{
 		current_task->errno = ENOMEM;

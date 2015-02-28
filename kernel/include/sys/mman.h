@@ -72,22 +72,4 @@ int posix_typed_mem_open(const char *, int, int);
 int shm_open(const char *, int, mode_t);
 int shm_unlink(const char *);
 
-/*
- * Used internally by the kernel to track mapped
- * files.
- */
-#if 1 || defined(KERNEL_CODE)
-typedef struct __mmap_info
-{
-	void *addr;
-	size_t len;
-	int flags;
-	int prot;
-	off_t offset;
-	int fd;
-	struct __mmap_info *next;
-}
-mmap_info_t;
-#endif
-
 #endif

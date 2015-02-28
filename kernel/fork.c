@@ -112,7 +112,7 @@ int fork(void)
 	intptr_t phys, kernel_stack;
 	vfs_node_t *procfs_node;
 	pid_t new_pid, new_tid;
-	mmap_info_t *pmmap, **next_mmap;
+	mmap_info_t /* *pmmap, */ **next_mmap;
 	
 	mutex_wait((mutex_t*) &pid_lock);
 	new_pid = next_pid++;
@@ -241,6 +241,7 @@ int fork(void)
 	/*
 	 * Copy the current task mmaps.
 	 */
+	#if 0
 	mutex_wait(&current_task->mmaps_lock);
 	pmmap = current_task->mmaps;
 	next_mmap = &new_task->mmaps;
@@ -256,6 +257,7 @@ int fork(void)
 		pmmap = pmmap->next;
 	}
 	mutex_release(&current_task->mmaps_lock);
+	#endif
 	
 	/*
 	 * Copy the current task buffers.
@@ -267,6 +269,7 @@ int fork(void)
 		buffer_t **tmp, **next, *buf;
 		tmp = &current_task->buffers;
 		next = &new_task->buffers;
+		next_mmap = &new_task->mmaps;
 		while (*tmp != NULL)
 		{
 			buf = malloc(sizeof(buffer_t));
@@ -274,6 +277,23 @@ int fork(void)
 			buf->address = (*tmp)->address;
 			buf->pages = (*tmp)->pages;
 			buf->next = NULL;
+			
+			if ((*tmp)->mmap != NULL)
+			{
+				mmap_info_t *new_mmap;
+				new_mmap = (mmap_info_t*) malloc(sizeof(mmap_info_t));
+				assert(new_mmap != NULL);
+				*new_mmap = *(*tmp)->mmap;
+				new_mmap->next = NULL;	
+				*next_mmap = new_mmap;
+				next_mmap = &new_mmap->next;
+				buf->mmap = new_mmap;
+			}
+			else
+			{
+				buf->mmap = NULL;
+			}
+			
 			*next = buf;
 			next = &buf->next;
 			tmp = &(*tmp)->next;

@@ -175,7 +175,10 @@ int fstat(int fd, struct stat *st)
 
 void _exit(int status)
 {
-	exit(0);
+	exit(status);
 }
 
-
+void _Exit(int status)
+{
+	exit(status);
+}

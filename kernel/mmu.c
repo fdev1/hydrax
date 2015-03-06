@@ -18,6 +18,7 @@
 #endif
 #define KERNEL_CODE
 
+#include "config.inc"
 #include <arch/arch.h>
 #include <stdarg.h>
 #include <mmu.h>
@@ -880,6 +881,10 @@ unhandled_fault:
 	printk(8, "page_fault: eip: 0x%x", regs->eip);
 	printk(8, "page_fault: eip: 0x%x (%s)", regs->eip, getsym(regs->eip));
 
+	#if CONFIG_DUMP_STACK_ON_PAGE_FAULT
+	arch_dump_stack_trace();
+	#endif
+	
 	if (getpid() != 0)
 	{
 		pthread_kill(current_task->id, SIGSEGV);

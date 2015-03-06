@@ -1,15 +1,20 @@
 ## Process this file with automake to generate Makefile.in
 
-#AUTOMAKE_OPTIONS = cygnus
+AUTOMAKE_OPTIONS = cygnus
 
 AM_CPPFLAGS  = $(NEWLIB_CFLAGS) $(CROSS_CFLAGS) $(TARGET_CFLAGS)
 
 libsyscalls_la_LDFLAGS = -Xcompiler -nostdlib
 
 noinst_LIBRARIES = lib.a
-lib_a_SOURCES = syscalls.c crt0.S
+lib_a_SOURCES = syscalls.c crt0.c
 lib_a_CFLAGS = $(AM_CFLAGS)
 noinst_DATA =
+
+all-local: crt0.o
+
+crt0.o: lib_a-crt0.o
+	cp lib_a-crt0.o crt0.o
 
 include $(srcdir)/../../../Makefile.shared
 

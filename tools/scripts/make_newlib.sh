@@ -37,7 +37,7 @@ mkdir -p newlib-2.2.0.20150225/newlib/libc/sys/hydrax/
 cp newlib/config.sub newlib-2.2.0.20150225/config.sub
 cp newlib/configure.host newlib-2.2.0.20150225/newlib/configure.host
 cp newlib/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
-cp newlib/crt0.S newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.S
+cp newlib/crt0.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.c
 cp newlib/hydrax_configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
 cp newlib/hydrax_Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
 cp newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c

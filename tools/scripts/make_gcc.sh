@@ -191,4 +191,6 @@ cd ../..
 rm -fr build/
 rm -fr gcc-4.8.4/
 
-
+cd $SCRIPTPATH
+cd bin
+ln -s i386-hydrax-gcc i386-hydrax-cc 

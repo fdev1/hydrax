@@ -810,7 +810,7 @@ case ${target} in
 *-*-hydrax*)
   gas=yes
   gnu_ld=yes
-  default_use_cxa_atexit=yes
+  default_use_cxa_atexit=no
   ;;
 *-*-elf)
   # Assume that newlib is being used and so __cxa_atexit is provided.

@@ -292,7 +292,7 @@ static void parse_command(char *cmd)
 				int exit_code;
 				char buffy[10];
 				waitpid(pid, &exit_code, 0);
-				setenv("!", itoa(exit_code, buffy, 10), 1);
+				/* setenv("!", itoa(exit_code, buffy, 10), 1); */
 			}
 		}
 	}

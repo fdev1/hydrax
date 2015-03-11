@@ -9,6 +9,7 @@ PREFIX="$SCRIPTPATH"
 TARGET=i386-hydrax
 MAKE_OPTS=-j2
 PATH="$SCRIPTPATH/bin:$PATH"
+NEWLIB_SRC=newlib-2.2.0.20150225
 last_error=0
 
 echo -e "$BULLET Copying system includes..."
@@ -40,6 +41,32 @@ cp newlib/configure.in newlib-2.2.0.20150225/newlib/libc/sys/configure.in
 cp newlib/crt0.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/crt0.c
 cp newlib/hydrax_configure.in newlib-2.2.0.20150225/newlib/libc/sys/hydrax/configure.in
 cp newlib/hydrax_Makefile.am newlib-2.2.0.20150225/newlib/libc/sys/hydrax/Makefile.am
+
+cp newlib/syscalls.h $NEWLIB_SRC/newlib/libc/sys/hydrax/syscalls.h
+cp newlib/exit.c $NEWLIB_SRC/newlib/libc/sys/hydrax/exit.c
+cp newlib/open.c $NEWLIB_SRC/newlib/libc/sys/hydrax/open.c
+cp newlib/close.c $NEWLIB_SRC/newlib/libc/sys/hydrax/close.c
+cp newlib/fork.c $NEWLIB_SRC/newlib/libc/sys/hydrax/fork.c
+cp newlib/execve.c $NEWLIB_SRC/newlib/libc/sys/hydrax/execve.c
+cp newlib/pipe.c $NEWLIB_SRC/newlib/libc/sys/hydrax/pipe.c
+cp newlib/getpid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/getpid.c
+cp newlib/kill.c $NEWLIB_SRC/newlib/libc/sys/hydrax/kill.c
+cp newlib/read.c $NEWLIB_SRC/newlib/libc/sys/hydrax/read.c
+cp newlib/write.c $NEWLIB_SRC/newlib/libc/sys/hydrax/write.c
+cp newlib/stat.c $NEWLIB_SRC/newlib/libc/sys/hydrax/stat.c
+cp newlib/signal.c $NEWLIB_SRC/newlib/libc/sys/hydrax/signal.c
+cp newlib/uname.c $NEWLIB_SRC/newlib/libc/sys/hydrax/uname.c
+cp newlib/getuid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/getuid.c
+cp newlib/getgid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/getgid.c
+cp newlib/setuid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/setuid.c
+cp newlib/setgid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/setgid.c
+cp newlib/getcwd.c $NEWLIB_SRC/newlib/libc/sys/hydrax/getcwd.c
+cp newlib/chdir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/chdir.c
+cp newlib/waitpid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/waitpid.c
+cp newlib/dup.c $NEWLIB_SRC/newlib/libc/sys/hydrax/dup.c
+cp newlib/dup2.c $NEWLIB_SRC/newlib/libc/sys/hydrax/dup2.c
+cp newlib/readdir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/readdir.c
+
 cp newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
 cp newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
 

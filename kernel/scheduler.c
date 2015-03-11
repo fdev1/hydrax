@@ -624,7 +624,7 @@ static inline int free_task_entry(task_t *t)
 		{
 			mutex_wait(&t->parent->lock);
 			ptmp = &t->parent->children;
-			while (*ptmp != NULL)
+			while (*ptmp != NULL && (*ptmp)->next_child != t)
 				ptmp = &(*ptmp)->next_child;
 			*ptmp = t->next_child;
 			mutex_release(&t->parent->lock);

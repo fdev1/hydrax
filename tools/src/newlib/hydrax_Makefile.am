@@ -7,7 +7,32 @@ AM_CPPFLAGS  = $(NEWLIB_CFLAGS) $(CROSS_CFLAGS) $(TARGET_CFLAGS)
 libsyscalls_la_LDFLAGS = -Xcompiler -nostdlib
 
 noinst_LIBRARIES = lib.a
-lib_a_SOURCES = syscalls.c crt0.c
+lib_a_SOURCES = syscalls.c \
+		exit.c \
+		open.c \
+		close.c \
+		fork.c \
+		execve.c \
+		pipe.c \
+		getpid.c \
+		kill.c \
+		read.c \
+		write.c \
+		signal.c \
+		stat.c \
+		uname.c \
+		getuid.c \
+		getgid.c \
+		setuid.c \
+		setgid.c \
+		getcwd.c \
+		chdir.c \
+		waitpid.c \
+		dup.c \
+		dup2.c \
+		readdir.c \
+		crt0.c
+
 lib_a_CFLAGS = $(AM_CFLAGS)
 noinst_DATA =
 

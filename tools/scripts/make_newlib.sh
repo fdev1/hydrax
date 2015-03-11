@@ -103,7 +103,7 @@ if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Aclocal failed on newlib/libc/sys/hydrax"
 	exit -1
 fi
-autoconf-2.64 > /dev/null 2> /dev/null || last_error=1
+autoconf > /dev/null 2> /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Autoreconf failed on newlib/libc/sys/hydrax!!"
 	exit -1

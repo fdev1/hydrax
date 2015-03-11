@@ -67,8 +67,8 @@ cp binutils/Makefile.am binutils-2.24/ld/Makefile.am
 
 echo -e "$BULLET Running automake..."
 cd binutils-2.24/ld
-aclocal-1.13
-automake-1.13
+aclocal-1.11
+automake-1.11
 cd ../..
 
 if [ "1" == "1" ]; then

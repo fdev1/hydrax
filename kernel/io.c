@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <printk.h>
 #include "config.inc"
+#include <stdarg.h>
 
 static inline bool check_file_permissions(vfs_node_t* node, uint32_t mask)
 {
@@ -64,7 +65,11 @@ static inline int create_file_descriptor(vfs_node_t *node, int fd, unsigned int 
 	
 	f = (file_t*) malloc(sizeof(file_t));
 	if (f == NULL)
-		return ENOMEM;
+	{
+		current_task->errno = ENOMEM;
+		return -1;
+	}
+	
 	f->next = NULL;
 	f->offset = 0;
 	f->mode = mode;
@@ -258,9 +263,12 @@ int rewindfd(int fd)
 	file_t *f;
 	f = get_file_descriptor(fd);
 	if (unlikely(f == NULL))
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
 	f->offset = 0;
-	return ESUCCESS;
+	return 0;
 }
 
 /*
@@ -282,7 +290,10 @@ int dup2(int oldfd, int newfd)
 	
 	old_desc = get_file_descriptor(oldfd);
 	if (old_desc == NULL)
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
 	assert(old_desc->node != NULL);
 	
 	new_desc = get_file_descriptor(newfd);
@@ -310,7 +321,8 @@ int dup2(int oldfd, int newfd)
  */
 int sync(void)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 /*
@@ -323,7 +335,8 @@ int fsync(int fd)
 
 int unlink(const char *path)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 /*
@@ -334,7 +347,10 @@ off_t lseek(int fd, off_t offset, int whence)
 	file_t *f;
 	f = get_file_descriptor(fd);
 	if (unlikely(f == NULL))
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return (off_t) -1;
+	}
 	switch (whence)
 	{
 		case SEEK_SET:
@@ -347,10 +363,11 @@ off_t lseek(int fd, off_t offset, int whence)
 			f->offset = f->node->length + offset;
 			break;
 		default:
-			return EINVAL;
+			current_task->errno = EINVAL;
+			return (off_t) -1;
 		
 	}
-	return ESUCCESS;
+	return (off_t) f->offset;
 }
 
 /*
@@ -358,7 +375,8 @@ off_t lseek(int fd, off_t offset, int whence)
  */
 int link(const char *oldpath, const char *newpath)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 /*
@@ -377,12 +395,15 @@ int chown(const char *path, uid_t uid, gid_t gid)
 {
 	vfs_node_t *node;
 	node = vfs_open(path, NULL);
-	if (node == NULL)
-		return ENOENT;
+	if (unlikely(node == NULL))
+	{
+		current_task->errno = ENOENT;
+		return -1;
+	}
 	node->uid = uid;
 	node->gid = gid;
 	vfs_close(node);
-	return ESUCCESS;
+	return 0;
 }
 
 /*
@@ -393,21 +414,30 @@ int chroot(const char *path)
 	vfs_node_t *node;
 	node = vfs_open(path, NULL);
 	if (node == NULL)
-		return ENOENT;
+	{
+		current_task->errno = ENOENT;
+		return -1;
+	}
 	if (current_task->root != NULL)
 		vfs_close(current_task->root);
 	current_task->root = node;
-	return ESUCCESS;
+	return 0;
 }
 
-int kfcntl(int fd, int cmd, void *args)
+int kfcntl(int fd, int cmd, va_list args)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 int fcntl(int fd, int cmd, ...)
 {
-	return ENOSYS;
+	int ret;
+	va_list args;
+	va_start(args, cmd);
+	ret = kfcntl(fd, cmd, args);
+	va_end(args);
+	return ret;
 }
 
 /*
@@ -415,7 +445,8 @@ int fcntl(int fd, int cmd, ...)
  */
 ssize_t readlink(const char *path, char *buf, size_t bufsize)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 /*
@@ -427,22 +458,27 @@ int pipe(int pipefd[2])
 	pipe_t *pipe;
 	
 	node = (vfs_node_t*) malloc(sizeof(vfs_node_t));
-	if (node == NULL)
-		return ENOMEM;
+	if (unlikely(node == NULL))
+	{
+		current_task->errno = ENOMEM;
+		return -1;
+	}
 	
 	pipe = (pipe_t*) malloc(sizeof(pipe_t));
-	if (pipe == NULL)
+	if (unlikely(pipe == NULL))
 	{
 		free(node);
-		return ENOMEM;
+		current_task->errno = ENOMEM;
+		return -1;
 	}
 	
 	pipe->buf = (void*) malloc(CONFIG_PIPE_BUFFER_SIZE);
-	if (pipe->buf == NULL)
+	if (unlikely(pipe->buf == NULL))
 	{
 		free(pipe);
 		free(node);
-		return ENOMEM;
+		current_task->errno = ENOMEM;
+		return -1;
 	}
 	
 	pipe->buf_end = pipe->buf + CONFIG_PIPE_BUFFER_SIZE;
@@ -469,18 +505,22 @@ int open(const char *pathname, int flags, ...)
 	file_t *f;
 	vfs_node_t *node;
 
-	if (strlen(pathname) > MAX_PATH)
-		return ENAMETOOLONG;
+	if (unlikely(strlen(pathname) > MAX_PATH))
+	{
+		current_task->errno = ENAMETOOLONG;
+		return -1;
+	}
 
 	/* open file node */
 	node = vfs_open(pathname, flags);
-	if (node == NULL)
-		return current_task->errno;
+	if (unlikely(node == NULL))
+		return -1;	/* errno set by vfs_open() */
 	
 	if (!check_file_permissions(node, FS_USR_READ | FS_GRP_READ))
 	{
 		vfs_close(node);
-		return EACCES;
+		current_task->errno = EACCES;
+		return -1;
 	}
 	
 	return create_file_descriptor(node, -1, FD_MODE_READ | FD_MODE_WRITE);
@@ -499,7 +539,10 @@ int close(int fd)
 
 	desc_table = current_task->descriptors_info;
 	if (unlikely(desc_table == NULL || desc_table->file_descriptors == NULL))
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
 
 	mutex_wait(&current_task->descriptors_info->lock);
 	f = (file_t*) desc_table->file_descriptors;
@@ -553,7 +596,10 @@ ssize_t write(int fd, const void* buf, size_t count)
 
 	f = get_file_descriptor(fd);
 	if (unlikely(f == NULL))
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
 
 	if (f->node->write == NULL)
 		return -1;
@@ -584,11 +630,20 @@ ssize_t read(int fd, void *buf, size_t count)
 int stat(const char *path, struct stat *buf)
 {
 	if (unlikely(strlen(path) > MAX_PATH))
-		return ENAMETOOLONG;
+	{
+		current_task->errno = ENAMETOOLONG;
+		return -1;
+	}
 	if (unlikely(buf == NULL))
-		return EFAULT;
+	{
+		current_task->errno = EFAULT;
+		return -1;
+	}
 	if (vfs_stat(NULL, path, buf) == NULL)
-		return EFAULT;
+	{
+		current_task->errno = EFAULT;
+		return -1;
+	}
 	return 0;
 }
 
@@ -599,13 +654,22 @@ int fstat(int fd, struct stat *buf)
 {
 	file_t *f;
 	if (unlikely(buf == NULL))
-		return EFAULT;
+	{
+		current_task->errno = EFAULT;
+		return -1;
+	}
 	f = get_file_descriptor(fd);
 	if (unlikely(f == NULL))
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
 	assert(f->node != NULL);
 	if (vfs_stat(f->node, NULL, buf) == NULL)
-		return EFAULT;
+	{
+		current_task->errno = EFAULT;
+		return -1;
+	}
 	return 0;
 }
 
@@ -614,7 +678,8 @@ int fstat(int fd, struct stat *buf)
  */
 int lstat (const char *path, struct stat *buf)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 /*
@@ -624,10 +689,16 @@ int chdir(const char *path)
 {
 	vfs_node_t *node;
 	if (unlikely(strlen(path) > MAX_PATH))
-		return ENAMETOOLONG;
+	{
+		current_task->errno = ENAMETOOLONG;
+		return -1;
+	}
 	node = vfs_open(path, NULL);
 	if (unlikely(node == NULL))
-		return ENOENT;
+	{
+		current_task->errno = ENOENT;
+		return -1;
+	}
 	scheduler_chdir(node);
 	return 0;
 }
@@ -637,7 +708,8 @@ int chdir(const char *path)
  */
 int mkdir(const char *path)
 {
-	return ENOSYS;
+	current_task->errno = ENOSYS;
+	return -1;
 }
 
 /*
@@ -650,7 +722,10 @@ char *getcwd(char *buf, size_t size)
 	size_t len;
 	
 	if (unlikely(buf == NULL))
+	{
+		current_task->errno = EFAULT;
 		return NULL;
+	}
 	node = get_current_task()->cwd;
 	if (node == NULL)
 	{
@@ -661,7 +736,10 @@ char *getcwd(char *buf, size_t size)
 			
 	vfs_get_path(node, &path[0]);
 	if (unlikely(strlen(path) > size))
+	{
+		current_task->errno = ENAMETOOLONG;
 		return NULL;
+	}
 	assert(strlen(path) < size);
 	strcpy(buf, path);
 	return buf;
@@ -675,7 +753,10 @@ int ioctl(int fd, unsigned int request, ...)
 	file_t *f;
 	f = get_file_descriptor(fd);
 	if (unlikely(f == NULL))
-		return EBADF;
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
 	assert(f->node != NULL);
 	return vfs_ioctl(f->node, request, &request);
 }

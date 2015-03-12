@@ -36,6 +36,7 @@
 #include <_ansi.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <stdarg.h>
 
 typedef unsigned long size_t;
 typedef long ssize_t;
@@ -235,7 +236,7 @@ int chroot(const char *path);
  * Execute command on a file.
  */
 int fcntl(int fd, int cmd, ...);
-int kfcntl(int fd, int cmd, void *args);
+int kfcntl(int fd, int cmd, va_list args);
 
 /*
  * Flush the buffer for an open file descriptor.

@@ -86,10 +86,10 @@ esac
 while [ $# != 0 ]; do
 	case $1 in
 		--host=*)
-			NEWBUILD=${1#*=}
-			if [ "$NEWBUILD" != "$XHOST" ]; then
-				XHOST=$NEWBUILD
-				PREFIX="$PREFIX/$NEWBUILD"
+			UXHOST=${1#*=}
+			if [ "$UXHOST" != "$XHOST" ]; then
+				XHOST=$UXHOST
+				PREFIX="$PREFIX/$UXHOST"
 			fi
 
 			case ${1#*=} in
@@ -107,8 +107,8 @@ MAKE_OPTS="-j$JOBS $MAKE_OPTS"
 # Print build info
 #
 echo -e "$BULLET Target: $XTARGET"
-echo -e "$BULLET Host compiler: $XHOST"
-echo -e "$BULLET Build compiler: $XBUILD"
+echo -e "$BULLET Host: $XHOST"
+echo -e "$BULLET Build: $XBUILD"
 echo -e "$BULLET Jobs: $JOBS"
 echo -e "$BULLET MAKE_OPTS: $MAKE_OPTS"
 echo -e "$BULLET Prefix: $PREFIX"
@@ -182,11 +182,13 @@ CMD="
 	--build=$XBUILD \
 	--host=$XHOST \
 	--target=$XTARGET \
-	--prefix="$PREFIX" \
-	--with-sysroot="$PREFIX" \
-	--libdir="$PREFIX" \
-	--with-lib-path="$PREFIX/lib" \
+	--prefix=$PREFIX \
+	--with-sysroot=$PREFIX \
+	--libdir=$PREFIX \
+	--with-lib-path=$PREFIX/lib \
 	--disable-nls \
+	--with-pkgversion=Hydrax_Binutils \
+	--with-bugurl=http://bugs.hydrax.com \
 	--disable-werror
 "
 echo $CMD
@@ -266,13 +268,15 @@ mkdir -p build/gcc
 cd build/gcc
 ../../gcc-4.8.4/configure \
 	--target=$XTARGET \
-	--prefix="$PREFIX" \
+	--prefix=$PREFIX \
 	--host=$XHOST \
 	--build=$XBUILD \
-	--with-sysroot="$PREFIX" \
+	--with-sysroot=$PREFIX \
 	--disable-multilib \
 	--disable-nls \
 	--disable-wchar_t \
+	--with-pkgversion=Hydrax_GCC \
+	--with-bugurl=http://bugs.hydrax.com \
 	--enable-languages=c || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error in configure gcc!"
@@ -306,5 +310,11 @@ rm -fr gcc-4.8.4/
 
 cd $SCRIPTPATH
 cd bin
-[ -x i386-hydrax-cc ] && rm i386-hydrax-cc
-ln -s i386-hydrax-gcc i386-hydrax-cc 
+if [ $WIN32 == 1 ]; then
+	[ -x i386-hydrax-cc.exe ] && rm i386-hydrax-cc.exe
+	cp i386-hydrax-gcc.exe i386-hydrax-cc.exe
+else
+	[ -x i386-hydrax-cc ] && rm i386-hydrax-cc
+	ln -s i386-hydrax-gcc i386-hydrax-cc 
+fi
+

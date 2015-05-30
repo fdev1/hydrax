@@ -5,6 +5,8 @@
 #  aclocal-1.11
 #  libtool
 #  GNU Make 4.1
+#  Autoconf-2.64 (on cygwin: gcc-tools-epoch2-autoconf)
+#  GNU Tar, xz, gzip, lzip
 #
 # On cygwin only i686-pc-mingw32 is
 # currently supported/tested.
@@ -36,7 +38,7 @@ progressfilt ()
 
 dowget()
 {
-	wget --progress=bar:force -c $1  2>&1 \
+	wget --progress=bar:force -c $1  2>&1 | \
 		"$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
 }
 
@@ -61,6 +63,7 @@ last_error=0
 case $(uname) in
 	CYGWIN*)
 		HOST=i686-pc-mingw32
+		export PATH=/opt/gcc-tools/epoch2/bin/:$PATH
 	;;
 esac
 
@@ -89,12 +92,13 @@ cd ..
 mkdir -p src
 cd src
 rm -fr binutils-2.24
-rm -fr gcc-4.8.1
+rm -fr gcc-4.8.4
 rm -fr gmp-6.0.0a
 rm -fr mpfr-3.1.2
 rm -fr mpc-1.0.3
 rm -fr build
 
+if [ "2" == "1" ]; then
 echo -e "$BULLET Unpacking binutils-2.24.tar.gz..."
 tar -xf ../tmp/binutils-2.24.tar.gz
 
@@ -122,7 +126,6 @@ aclocal-1.11
 automake-1.11
 cd ../..
 
-if [ "2" == "1" ]; then
 echo -e "\n"
 echo -e "$BULLET Configuring binutils..."
 echo -e "\tlib path:\t$PREFIX/lib"
@@ -201,7 +204,11 @@ echo '#define STANDARD_STARTFILE_PREFIX "$PREFIX/i386-hydrax/lib/"' >> gcc-4.8.4
 
 echo -e "$BULLET Running autoconf on gcc-4.8.4/libstdc++-v3..."
 cd gcc-4.8.4/libstdc++-v3
-autoconf-2.64
+autoconf-2.64 || last_error=1
+if [ "$last_error" == "1" ]; then
+	echo -e "$REDBUL Error: autoconf-2.64 needed!!"
+	exit -1
+fi
 cd ../..
 
 echo -e "$BULLET Configuring gcc..."

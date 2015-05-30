@@ -12,6 +12,7 @@
 # currently supported/tested.
 #  
 
+QUIET=1
 
 progressfilt ()
 {
@@ -38,8 +39,12 @@ progressfilt ()
 
 dowget()
 {
-	wget --progress=bar:force -c $1  2>&1 | \
-		"$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
+	if [ 1 == 1 ]; then
+		wget -qc $1 2>&1 > /dev/null
+	else
+		wget -c --progress=bar:force -c $1  2>&1 | \
+			"$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
+	fi
 }
 
 if [ "$1" == "--progress-filter" ]; then
@@ -53,19 +58,60 @@ cd "$SCRIPTPATH"
 BULLET="\033[0;32m *\033[0m"
 REDBUL="\033[0;31m !!\033[0m"
 PREFIX="$SCRIPTPATH"
-TARGET=i386-hydrax
-#PATH="$PREFIX/bin:$PATH"
+XTARGET=i386-hydrax
 MAKE_OPTS=
-HOST=
+XBUILD=$(gcc -dumpmachine)
+XHOST=$(gcc -dumpmachine)
+WIN32=0
+JOBS=1
 
 last_error=0
 
+# do our best to detect the host platform
+# and default compiler to use
+#
 case $(uname) in
 	CYGWIN*)
-		HOST=i686-pc-mingw32
+		XHOST=i686-pc-mingw32
+		JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 		export PATH=/opt/gcc-tools/epoch2/bin/:$PATH
 	;;
+	Linux)
+		JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
+	;;
 esac
+
+# parse arguments
+#
+while [ $# != 0 ]; do
+	case $1 in
+		--host=*)
+			NEWBUILD=${1#*=}
+			if [ "$NEWBUILD" != "$XHOST" ]; then
+				XHOST=$NEWBUILD
+				PREFIX="$PREFIX/$NEWBUILD"
+			fi
+
+			case ${1#*=} in
+				*mingw*)
+					WIN32=1
+				;;
+			esac
+		;;
+	esac
+	shift
+done
+
+MAKE_OPTS="-j$JOBS $MAKE_OPTS"
+
+# Print build info
+#
+echo -e "$BULLET Target: $XTARGET"
+echo -e "$BULLET Host compiler: $XHOST"
+echo -e "$BULLET Build compiler: $XBUILD"
+echo -e "$BULLET Jobs: $JOBS"
+echo -e "$BULLET MAKE_OPTS: $MAKE_OPTS"
+echo -e "$BULLET Prefix: $PREFIX"
 
 echo -e "$BULLET Copying system includes..."
 scripts/copy_headers.sh > /dev/null || last_error=1
@@ -98,7 +144,7 @@ rm -fr mpfr-3.1.2
 rm -fr mpc-1.0.3
 rm -fr build
 
-if [ "2" == "1" ]; then
+#if [ "2" == "1" ]; then
 echo -e "$BULLET Unpacking binutils-2.24.tar.gz..."
 tar -xf ../tmp/binutils-2.24.tar.gz
 
@@ -128,20 +174,24 @@ cd ../..
 
 echo -e "\n"
 echo -e "$BULLET Configuring binutils..."
-echo -e "\tlib path:\t$PREFIX/lib"
-echo -e "\tsysroot:\t$PREFIX"
-#exit -1
 
 mkdir -p build/binutils
 cd build/binutils
-../../binutils-2.24/configure --target=$TARGET \
+CMD="
+../../binutils-2.24/configure \
+	--build=$XBUILD \
+	--host=$XHOST \
+	--target=$XTARGET \
 	--prefix="$PREFIX" \
-	--host=$HOST \
-	--build=$HOST \
 	--with-sysroot="$PREFIX" \
 	--libdir="$PREFIX" \
 	--with-lib-path="$PREFIX/lib" \
-	--disable-nls --disable-werror || last_error=1
+	--disable-nls \
+	--disable-werror
+"
+echo $CMD
+echo
+${CMD} || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error configuring binutils!"
 	exit -1
@@ -164,7 +214,7 @@ echo -e "$BULLET Cleaning up binutils..."
 cd ../..
 rm -fr build/
 rm -fr binutils-2.24/
-fi
+#fi
 
 echo -e "$BULLET Unpacking gcc-4.8.4.tar.gz..."
 tar -xf ../tmp/gcc-4.8.4.tar.gz
@@ -214,10 +264,11 @@ cd ../..
 echo -e "$BULLET Configuring gcc..."
 mkdir -p build/gcc
 cd build/gcc
-../../gcc-4.8.4/configure --target=$TARGET \
+../../gcc-4.8.4/configure \
+	--target=$XTARGET \
 	--prefix="$PREFIX" \
-	--host=$HOST \
-	--build=$HOST \
+	--host=$XHOST \
+	--build=$XBUILD \
 	--with-sysroot="$PREFIX" \
 	--disable-multilib \
 	--disable-nls \
@@ -255,4 +306,5 @@ rm -fr gcc-4.8.4/
 
 cd $SCRIPTPATH
 cd bin
+[ -x i386-hydrax-cc ] && rm i386-hydrax-cc
 ln -s i386-hydrax-gcc i386-hydrax-cc 

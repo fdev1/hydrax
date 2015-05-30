@@ -12,40 +12,74 @@
 # currently supported/tested.
 #  
 
-QUIET=1
+QUIET=0
 
 progressfilt ()
 {
-    local flag=false c count cr=$'\r' nl=$'\n'
-    while IFS='' read -d '' -rn 1 c
-    do
-        if $flag
-        then
-            printf '%c' "$c"
-        else
-            if [[ $c != $cr && $c != $nl ]]
-            then
-                count=0
-            else
+	local flag=false
+	local gotnewline=false
+	local c=
+	local cr=$'\r'
+	local nl=$'\n'
+	local blank=
+	local count=0
+	
+	while IFS='' read -d '' -rn 1 c
+	do
+		if [ $flag == true ];
+		then
+			if [[ $c == $nl ]];
+			then
+				gotnewline=true
+			fi
+			if [ $gotnewline == false ];
+			then
+				printf '%c' "$c"
+			fi
+		else
+			if [[ $c != $cr && $c != $nl ]]
+			then
+				count=0
+			else
+				((count++))
+				if ((count > 1))
+				then
+					flag=true
+				fi
+			fi
+		fi
+	done
+
+	COLUMNS=$(tput cols)
+	count=0
+        while [ $count -lt $COLUMNS ];
+        do
+                blank="$blank "
                 ((count++))
-                if ((count > 1))
-                then
-                    flag=true
-                fi
-            fi
-        fi
-    done
+        done
+
+	printf '%c' "$cr"
+	printf "$blank"
+	printf '%c' "$cr"
 }
 
 dowget()
 {
-	if [ 1 == 1 ]; then
-		wget -qc $1 2>&1 > /dev/null
-	else
-		wget -c --progress=bar:force -c $1  2>&1 | \
-			"$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
-	fi
+	#if [ $QUIET == 1 ]; then
+	#	wget -qc $1 2>&1 > /dev/null
+	#else
+	#fi
+	echo -e "$BULLET Fetching $1..."
+	wget -c --progress=bar:force -c $1  2>&1 | \
+		"$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
 }
+
+dotar()
+{
+	echo -e "$BULLET Unpacking $(basename $1)..."
+	tar -xf $1
+}
+
 
 if [ "$1" == "--progress-filter" ]; then
 	progressfilt
@@ -122,16 +156,14 @@ fi
 
 mkdir -p tmp
 cd tmp
-echo -e "$BULLET Fetching binutils-2.24.tar.gz..."
 dowget http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.gz
-echo -e "$BULLET Fetching gcc-4.8.4.tar.gz..."
 dowget ftp://ftp.gnu.org/gnu/gcc/gcc-4.8.4/gcc-4.8.4.tar.gz
-echo -e "$BULLET Fetching gmp-6.0.0a.tar.lz..."
 dowget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz
-echo -e "$BULLET Fetching mpfr-3.1.2.tar.xz..."
 dowget http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz
-echo -e "$BULLET Fetching mpc-1.0.3.tar.gz..."
 dowget ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
+dowget http://isl.gforge.inria.fr/isl-0.14.tar.gz
+#dowget http://www.bastoul.net/cloog/pages/download/count.php3?url=./cloog-0.18.3.tar.gz
+dowget http://www.bastoul.net/cloog/pages/download/cloog-0.18.3.tar.gz
 
 echo -e "$BULLET Cleaning up working directory..."
 cd ..
@@ -144,11 +176,15 @@ rm -fr mpfr-3.1.2
 rm -fr mpc-1.0.3
 rm -fr build
 
-#if [ "2" == "1" ]; then
-echo -e "$BULLET Unpacking binutils-2.24.tar.gz..."
-tar -xf ../tmp/binutils-2.24.tar.gz
+dotar ../tmp/binutils-2.24.tar.gz
+dotar ../tmp/isl-0.14.tar.gz
+dotar ../tmp/cloog-0.18.3.tar.gz
 
-echo -e "$BULLET Copying config files..."
+echo -e "$BULLET Preparing source..."
+mv isl-0.14 binutils-2.24/isl
+mv cloog-0.18.3 binutils-2.24/cloog
+
+echo -e "$BULLET Customizing source..."
 cp binutils/config.sub binutils-2.24/config.sub
 cp binutils/config.bfd binutils-2.24/bfd/config.bfd
 cp binutils/gas_configure.tgt binutils-2.24/gas/configure.tgt
@@ -218,19 +254,19 @@ rm -fr build/
 rm -fr binutils-2.24/
 #fi
 
-echo -e "$BULLET Unpacking gcc-4.8.4.tar.gz..."
-tar -xf ../tmp/gcc-4.8.4.tar.gz
-echo -e "$BULLET Unpacking gmp-6.0.0a.tar.lz..."
-tar -xf ../tmp/gmp-6.0.0a.tar.lz
-echo -e "$BULLET Unpacking mpfr-3.1.2.tar.xz..."
-tar -xf ../tmp/mpfr-3.1.2.tar.xz
-echo -e "$BULLET Unpacking mpc-1.0.3.tar.gz..."
-tar -xf ../tmp/mpc-1.0.3.tar.gz
+dotar ../tmp/gcc-4.8.4.tar.gz
+dotar ../tmp/gmp-6.0.0a.tar.lz
+dotar ../tmp/mpfr-3.1.2.tar.xz
+dotar ../tmp/mpc-1.0.3.tar.gz
+dotar ../tmp/isl-0.14.tar.gz
+dotar ../tmp/cloog-0.18.3.tar.gz
 
 echo -e "$BULLET Copying optional packages..."
 mv -f gmp-6.0.0 gcc-4.8.4/gmp
 mv -f mpfr-3.1.2 gcc-4.8.4/mpfr
 mv -f mpc-1.0.3 gcc-4.8.4/mpc
+mv -f isl-0.14 gcc-4.8.4/isl
+mv -f cloog-0.18.3 gcc-4.8.4/cloog
 
 #echo -e "$BULLET Applying gcc-4.8.4.patch..."
 #cd gcc-4.8.4
@@ -241,18 +277,16 @@ mv -f mpc-1.0.3 gcc-4.8.4/mpc
 #fi
 #cd ..
 
-echo -e "Copying configuration files..."
-cp -v gcc/config.sub gcc-4.8.4/config.sub
-cp -v gcc/hydrax.h gcc-4.8.4/gcc/config/hydrax.h
-cp -v gcc/config.gcc gcc-4.8.4/gcc/config.gcc
-cp -v gcc/crossconfig.m4 gcc-4.8.4/libstdc++-v3/crossconfig.m4
-cp -v gcc/config.host gcc-4.8.4/libgcc/config.host
-cp -v gcc/mkfixinc.sh gcc-4.8.4/fixincludes/mkfixinc.sh
-#exit -1
+echo -e "$BULLET Customizing source..."
+cp gcc/config.sub gcc-4.8.4/config.sub
+cp gcc/hydrax.h gcc-4.8.4/gcc/config/hydrax.h
+cp gcc/config.gcc gcc-4.8.4/gcc/config.gcc
+cp gcc/crossconfig.m4 gcc-4.8.4/libstdc++-v3/crossconfig.m4
+cp gcc/config.host gcc-4.8.4/libgcc/config.host
+cp gcc/mkfixinc.sh gcc-4.8.4/fixincludes/mkfixinc.sh
 
 echo '#undef STANDARD_STARTFILE_PREFIX' >> gcc-4.8.4/gcc/config/hydrax.h
 echo '#define STANDARD_STARTFILE_PREFIX "$PREFIX/i386-hydrax/lib/"' >> gcc-4.8.4/gcc/config/hydrax.h
-
 
 echo -e "$BULLET Running autoconf on gcc-4.8.4/libstdc++-v3..."
 cd gcc-4.8.4/libstdc++-v3

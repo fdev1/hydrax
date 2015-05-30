@@ -1,8 +1,36 @@
 #!/bin/bash
 
-SCRIPTPATH=$( cd $(dirname $0)/.. ; pwd -P )
-cd $SCRIPTPATH
+progressfilt ()
+{
+    local flag=false c count cr=$'\r' nl=$'\n'
+    while IFS='' read -d '' -rn 1 c
+    do
+        if $flag
+        then
+            printf '%c' "$c"
+        else
+            if [[ $c != $cr && $c != $nl ]]
+            then
+                count=0
+            else
+                ((count++))
+                if ((count > 1))
+                then
+                    flag=true
+                fi
+            fi
+        fi
+    done
+}
 
+if [ "$1" == "--progress-filter" ]; then
+	progressfilt
+	exit 0
+fi
+
+
+SCRIPTPATH="$( cd $(dirname $0)/../ ; pwd -P )"
+cd "$SCRIPTPATH"
 BULLET="\033[0;32m *\033[0m"
 REDBUL="\033[0;31m !!\033[0m"
 PREFIX="$SCRIPTPATH"
@@ -22,15 +50,15 @@ fi
 mkdir -p tmp
 cd tmp
 echo -e "$BULLET Fetching binutils-2.24.tar.gz..."
-wget -c http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.gz 2> /dev/null
+wget --progress=bar:force -c http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.gz 2>&1 | "$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
 echo -e "$BULLET Fetching gcc-4.8.4.tar.gz..."
-wget -c ftp://ftp.gnu.org/gnu/gcc/gcc-4.8.4/gcc-4.8.4.tar.gz 2> /dev/null
+wget -c ftp://ftp.gnu.org/gnu/gcc/gcc-4.8.4/gcc-4.8.4.tar.gz #2> /dev/null
 echo -e "$BULLET Fetching gmp-6.0.0a.tar.lz..."
-wget -c https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz 2> /dev/null
+wget -c https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz #2> /dev/null
 echo -e "$BULLET Fetching mpfr-3.1.2.tar.xz..."
-wget -c http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz 2> /dev/null
+wget -c http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz #2> /dev/null
 echo -e "$BULLET Fetching mpc-1.0.3.tar.gz..."
-wget -c ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz 2> /dev/null
+wget -c ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz #2> /dev/null
 
 echo -e "$BULLET Cleaning up working directory..."
 cd ..
@@ -81,10 +109,10 @@ echo -e "\tsysroot:\t$PREFIX"
 mkdir -p build/binutils
 cd build/binutils
 ../../binutils-2.24/configure --target=$TARGET \
-	--prefix=$PREFIX \
-	--with-sysroot=$PREFIX \
-	--libdir=$PREFIX \
-	--with-lib-path=$PREFIX/lib \
+	--prefix="$PREFIX" \
+	--with-sysroot="$PREFIX" \
+	--libdir="$PREFIX" \
+	--with-lib-path="$PREFIX/lib" \
 	--disable-nls --disable-werror || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error configuring binutils!"

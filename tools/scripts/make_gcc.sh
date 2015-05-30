@@ -23,6 +23,11 @@ progressfilt ()
     done
 }
 
+dowget()
+{
+	wget --progress=bar:force -c $1  2>&1 | "$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
+}
+
 if [ "$1" == "--progress-filter" ]; then
 	progressfilt
 	exit 0
@@ -36,7 +41,7 @@ REDBUL="\033[0;31m !!\033[0m"
 PREFIX="$SCRIPTPATH"
 TARGET=i386-hydrax
 #PATH="$PREFIX/bin:$PATH"
-MAKE_OPTS=-j2
+MAKE_OPTS=
 
 last_error=0
 
@@ -50,15 +55,15 @@ fi
 mkdir -p tmp
 cd tmp
 echo -e "$BULLET Fetching binutils-2.24.tar.gz..."
-wget --progress=bar:force -c http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.gz 2>&1 | "$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
+dowget http://ftp.gnu.org/gnu/binutils/binutils-2.24.tar.gz
 echo -e "$BULLET Fetching gcc-4.8.4.tar.gz..."
-wget -c ftp://ftp.gnu.org/gnu/gcc/gcc-4.8.4/gcc-4.8.4.tar.gz #2> /dev/null
+dowget ftp://ftp.gnu.org/gnu/gcc/gcc-4.8.4/gcc-4.8.4.tar.gz
 echo -e "$BULLET Fetching gmp-6.0.0a.tar.lz..."
-wget -c https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz #2> /dev/null
+dowget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz
 echo -e "$BULLET Fetching mpfr-3.1.2.tar.xz..."
-wget -c http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz #2> /dev/null
+dowget http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz
 echo -e "$BULLET Fetching mpc-1.0.3.tar.gz..."
-wget -c ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz #2> /dev/null
+dowget ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 
 echo -e "$BULLET Cleaning up working directory..."
 cd ..
@@ -75,7 +80,7 @@ rm -fr build-gcc
 echo -e "$BULLET Unpacking binutils-2.24.tar.gz..."
 tar -xf ../tmp/binutils-2.24.tar.gz
 
-echo -e "Copying config files..."
+echo -e "$BULLET Copying config files..."
 cp binutils/config.sub binutils-2.24/config.sub
 cp binutils/config.bfd binutils-2.24/bfd/config.bfd
 cp binutils/gas_configure.tgt binutils-2.24/gas/configure.tgt

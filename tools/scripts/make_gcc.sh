@@ -1,4 +1,15 @@
 #!/bin/bash
+#
+# Some dependencies:
+#  automake-1.11
+#  aclocal-1.11
+#  libtool
+#  GNU Make 4.1
+#
+# On cygwin only i686-pc-mingw32 is
+# currently supported/tested.
+#  
+
 
 progressfilt ()
 {
@@ -25,7 +36,8 @@ progressfilt ()
 
 dowget()
 {
-	wget --progress=bar:force -c $1  2>&1 | "$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
+	wget --progress=bar:force -c $1  2>&1 \
+		"$SCRIPTPATH/scripts/make_gcc.sh" --progress-filter
 }
 
 if [ "$1" == "--progress-filter" ]; then
@@ -42,8 +54,15 @@ PREFIX="$SCRIPTPATH"
 TARGET=i386-hydrax
 #PATH="$PREFIX/bin:$PATH"
 MAKE_OPTS=
+HOST=
 
 last_error=0
+
+case $(uname) in
+	CYGWIN*)
+		HOST=i686-pc-mingw32
+	;;
+esac
 
 echo -e "$BULLET Copying system includes..."
 scripts/copy_headers.sh > /dev/null || last_error=1
@@ -74,8 +93,7 @@ rm -fr gcc-4.8.1
 rm -fr gmp-6.0.0a
 rm -fr mpfr-3.1.2
 rm -fr mpc-1.0.3
-rm -fr build-binutils
-rm -fr build-gcc
+rm -fr build
 
 echo -e "$BULLET Unpacking binutils-2.24.tar.gz..."
 tar -xf ../tmp/binutils-2.24.tar.gz
@@ -104,7 +122,7 @@ aclocal-1.11
 automake-1.11
 cd ../..
 
-if [ "1" == "1" ]; then
+if [ "2" == "1" ]; then
 echo -e "\n"
 echo -e "$BULLET Configuring binutils..."
 echo -e "\tlib path:\t$PREFIX/lib"
@@ -115,6 +133,8 @@ mkdir -p build/binutils
 cd build/binutils
 ../../binutils-2.24/configure --target=$TARGET \
 	--prefix="$PREFIX" \
+	--host=$HOST \
+	--build=$HOST \
 	--with-sysroot="$PREFIX" \
 	--libdir="$PREFIX" \
 	--with-lib-path="$PREFIX/lib" \
@@ -189,6 +209,8 @@ mkdir -p build/gcc
 cd build/gcc
 ../../gcc-4.8.4/configure --target=$TARGET \
 	--prefix="$PREFIX" \
+	--host=$HOST \
+	--build=$HOST \
 	--with-sysroot="$PREFIX" \
 	--disable-multilib \
 	--disable-nls \

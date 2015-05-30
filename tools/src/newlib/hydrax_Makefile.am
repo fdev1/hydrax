@@ -31,6 +31,9 @@ lib_a_SOURCES = syscalls.c \
 		dup.c \
 		dup2.c \
 		readdir.c \
+		lseek.c \
+		opendir.c \
+		closedir.c \
 		crt0.c
 
 lib_a_CFLAGS = $(AM_CFLAGS)

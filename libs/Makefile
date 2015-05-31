@@ -16,8 +16,14 @@ CC=../tools/bin/i386-hydrax-gcc
 LD=../tools/bin/i386-hydrax-ld
 AR=../tools/bin/i386-hydrax-ar
 
-SOURCES=syscalls.o string.o stdio.o start.o bget/bget.o malloc.o
+ECHOFLAGS=-e
 
+ifneq ($(shell echo -e "Hello"),Hello)
+        ECHOFLAGS=
+endif
+
+
+SOURCES=syscalls.o string.o stdio.o start.o bget/bget.o malloc.o
 CFLAGS=-m32 -static -nostdlib -nostdinc -fno-builtin -I. -I../kernel/include -fno-stack-protector
 ARFLAGS=mcs
 
@@ -30,10 +36,10 @@ clean:
 	rm -f libpthread.a
 
 libc: $(SOURCES)
-	@echo -e "  AR\t\tlibc.a"
-	@ar $(ARFLAGS) libc.a $(SOURCES)
+	@echo $(ECHOFLAGS) "  AR\t\tlibc.a"
+	@$(AR) $(ARFLAGS) libc.a $(SOURCES)
 	
 .c.o:
-	@echo -e "  CC\t\t"$<
+	@echo $(ECHOFLAGS) "  CC\t\t"$<
 	@$(CC) $(CFLAGS) -c $< -o $@
 

@@ -89,6 +89,12 @@ fi
 
 SCRIPTPATH="$( cd $(dirname $0)/../ ; pwd -P )"
 cd "$SCRIPTPATH"
+
+mkdir -p tmp/tools
+AUTOPATH=$(readlink -f tmp/tools)
+export PATH=$AUTOPATH/bin:$PATH
+echo $AUTOPATH
+
 BULLET="\033[0;32m *\033[0m"
 REDBUL="\033[0;31m !!\033[0m"
 PREFIX="$SCRIPTPATH"
@@ -99,17 +105,28 @@ XHOST=$(gcc -dumpmachine)
 WIN32=0
 JOBS=1
 BUILD_BINUTILS=1
+NEED_AUTOMAKE_1_11=0 
 
-last_error=0
+last_error=0 
+
+if [ "$(which automake-1.11)" == "" ]; then
+	NEED_AUTOMAKE_1_11=1
+fi
 
 # do our best to detect the host platform
 # and default compiler to use
 #
 case $(uname) in
+	Darwin)
+		JOBS=$(/usr/sbin/sysctl -n hw.ncpu)
+		#if [ "$(which automake-1.11)" == "" ]; then
+		#	NEED_AUTOMAKE_1_11=1
+		#fi
+	;;
 	CYGWIN*)
 		#XHOST=i686-pc-mingw32
 		JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
-		export PATH=/opt/gcc-tools/epoch2/bin/:$PATH
+		#export PATH=/opt/gcc-tools/epoch2/bin/:$PATH
 	;;
 	Linux)
 		JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
@@ -168,6 +185,12 @@ dowget ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 dowget http://isl.gforge.inria.fr/isl-0.14.tar.gz
 dowget http://www.bastoul.net/cloog/pages/download/cloog-0.18.3.tar.gz
 
+if [ $NEED_AUTOMAKE_1_11 == 1 ]; then
+	dowget http://ftp.gnu.org/gnu/automake/automake-1.11.1.tar.gz
+	dowget http://ftp.gnu.org/gnu/autoconf/autoconf-2.64.tar.xz
+	dowget http://gnu.mirrors.pair.com/gnu/libtool/libtool-2.4.tar.xz
+fi
+
 echo -e "$BULLET Cleaning up working directory..."
 cd ..
 mkdir -p src
@@ -180,6 +203,84 @@ rm -fr mpc-1.0.3
 rm -fr build
 
 if [ $BUILD_BINUTILS == 1 ]; then
+
+	if [ $NEED_AUTOMAKE_1_11 == 1 ]; then
+
+		dotar ../tmp/automake-1.11.1.tar.gz
+		dotar ../tmp/autoconf-2.64.tar.xz
+		dotar ../tmp/libtool-2.4.tar.xz
+		
+		cd automake-1.11.1
+		echo -e "$BULLET Configuring automake-1.11.6..."
+		./configure --prefix=$AUTOPATH || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error configuring automake-1.11!!"
+			exit 0
+		fi
+		echo -e "$BULLET Compiling automake-1.11..."
+		make $MAKE_OPTS || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error compiling automake-1.11!!"
+			exit 0
+		fi
+		echo -e "$BULLET Installing automake-1.11..."
+		make install || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error installing automake-1.11!!"
+			exit -1
+		fi
+		echo -e "$BULLET Cleaning up automake-1.11..."
+		cd ..
+		rm -fR automake-1.11.1
+
+		cd autoconf-2.64
+		echo -e "$BULLET Configuring autoconf-2.64..."
+		./configure --prefix=$AUTOPATH || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error configuring autoconf-2.64"
+			exit -1
+		fi
+		echo -e "$BULLET Compiling autoconf-2.64..."
+		make $MAKE_OPTS || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error compiling autoconf-2.64!!"
+			exit -1
+		fi
+		echo -e "$BULLET Installing autoconf-2.64..."
+		make install || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error installing autoconf!"
+			exit -1
+		fi
+		echo -e "$BULLET Cleaning up autoconf-2.64..."
+		cd ..
+		rm -fR autoconf-2.64
+
+		echo -e "$BULLET Configuring libtool-2.4..."
+		cd libtool-2.4
+		./configure --prefix=$AUTOPATH || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error configuring libtool..."
+			exit -1
+		fi
+		echo -e "$BULLET Compiling libtool..."
+		make $MAKE_OPTS || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error compiling libtool..."
+			exit -1
+		fi
+		echo -e "$BULLET Installing libtool..."
+		make install || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error installing libtool..."
+			exit -1
+		fi
+		ln -s $AUTOPATH/bin/autoconf $AUTOPATH/bin/autoconf-2.64
+		echo -e "$BULLET Cleaning libtool..."
+		cd ..
+		rm -fR libtool-2.4
+
+	fi
 
 	dotar ../tmp/binutils-2.24.tar.gz
 	#dotar ../tmp/isl-0.14.tar.gz

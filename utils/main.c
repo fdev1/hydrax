@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include <syscall.h>
+/*#include <syscall.h>*/
 #include <dirent.h>
 #include <sys/stat.h>
 #include "args.h"

@@ -1,6 +1,11 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
+#if defined(__APPLE_CC__)
+/*#	include <sys/malloc.h>*/
+#else
+#	include <malloc.h>
+#endif
 #include <assert.h>
 
 #define MAX_FILENAME	(255)
@@ -12,7 +17,9 @@ typedef unsigned char uint8_t;
 //typedef char uint8_t;
 typedef uint32_t uid_t;
 typedef uint32_t gid_t;
-typedef uint32_t intptr_t;
+/*typedef uint32_t intptr_t;*/
+
+#define intptr_t uint32_t
 
 #if defined(NULL)
 #undef NULL
@@ -262,7 +269,7 @@ char *filename(const char *path)
 	return p;	
 }
 
-int main(char argc, char **argv)
+int main(int argc, char **argv)
 {
 	int i, j;
 	int nodes_count;

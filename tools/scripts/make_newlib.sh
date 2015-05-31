@@ -3,6 +3,11 @@
 SCRIPTPATH=$( cd $(dirname $0)/.. ; pwd -P )
 cd $SCRIPTPATH
 
+mkdir -p tmp/tools
+AUTOPATH=$(readlink -f tmp/tools)
+export PATH=$AUTOPATH/bin:$PATH
+
+
 BULLET="\033[0;32m *\033[0m"
 REDBUL="\033[0;31m !!\033[0m"
 PREFIX="$SCRIPTPATH"
@@ -22,7 +27,7 @@ fi
 mkdir -p tmp
 cd tmp
 echo -e "$BULLET Fetching ftp://sourceware.org/pub/newlib/newlib-2.2.0.20150225.tar.gz..."
-wget -c --quiet --show-progress ftp://sourceware.org/pub/newlib/newlib-2.2.0.20150225.tar.gz
+wget -c --quiet ftp://sourceware.org/pub/newlib/newlib-2.2.0.20150225.tar.gz
 cd ..
 
 cd src
@@ -70,7 +75,7 @@ cp newlib/readdir_r.c $NEWLIB_SRC/newlib/libc/sys/hydrax/readdir_r.c
 cp newlib/lseek.c $NEWLIB_SRC/newlib/libc/sys/hydrax/lseek.c
 cp newlib/opendir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/opendir.c
 cp newlib/closedir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/closedir.c
-
+cp ../../kernel/include/syscall.h $NEWLIB_SRC/newlib/libc/sys/hydrax/syscall.h
 cp newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
 cp newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h
 
@@ -92,11 +97,14 @@ cp ../../../kernel/include/unistd.h newlib/libc/sys/hydrax/include/sys/unistd.h
 cp ../../../kernel/include/sys/stat.h newlib/libc/sys/hydrax/include/sys/stat.h
 cp ../../../kernel/include/sys/types.h newlib/libc/sys/hydrax/include/sys/types.h
 cp ../../../kernel/include/errno.h newlib/libc/sys/hydrax/include/sys/errno.h
+#cp ../../../kernel/include/ucontext.h newlib/libc/sys/hydrax/include/sys/ucontext.h
+cp ../../../kernel/include/sys/utsname.h newlib/libc/sys/hydrax/include/sys/utsname.h
+#cp ../../../kernel/include/syscall.h newlib/libc/sys/hydrax/include/sys/syscall.h
 cd ../
 
 echo -e "$BULLET Running autoconf..."
 cd newlib-2.2.0.20150225/newlib/libc/sys
-autoconf > /dev/null 2> /dev/null || last_error=1
+autoconf-2.64 > /dev/null 2> /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Autoconf failed on newlib/libc/sys!!"
 	exit -1

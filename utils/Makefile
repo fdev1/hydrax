@@ -4,6 +4,14 @@
 
 CC=../tools/bin/i386-hydrax-gcc
 LD=../tools/bin/i386-hydrax-ld
+
+ECHOFLAGS=-e
+
+ifneq ($(shell echo $(ECHOFLAGS) "Hello"),Hello)
+        ECHOFLAGS=
+endif
+
+
 LIBC=../tools/i386-hydrax/lib/libc.a 
 SOURCES=main.o args.o
 ECHO_SOURCES=echo.o
@@ -34,25 +42,25 @@ clean:
 	rm -f threadtest
 	
 init: $(INIT_OBJ)
-	@echo -e "  LD\t\t$(INIT_EXE)"
+	@echo $(ECHOFLAGS) "  LD\t\t$(INIT_EXE)"
 	@$(LD) $(LDFLAGS) -o $(INIT_EXE) $(INIT_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 echo: $(ECHO_OBJ)
-	@echo -e "  LD\t\t$(ECHO_EXE)"
+	@echo $(ECHOFLAGS) "  LD\t\t$(ECHO_EXE)"
 	@$(LD) $(LDFLAGS) -o $(ECHO_EXE) $(ECHO_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 pipe: $(PIPE_OBJ)
-	@echo -e "  LD\t\t$(PIPE_EXE)"
+	@echo $(ECHOFLAGS) "  LD\t\t$(PIPE_EXE)"
 	@$(LD) $(LDFLAGS) -o $(PIPE_EXE) $(PIPE_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 thread: $(THREAD_OBJ)
-	@echo -e "  LD\t\t$(THREAD_EXE)"
+	@echo $(ECHOFLAGS) "  LD\t\t$(THREAD_EXE)"
 	@$(LD) $(LDFLAGS) -o $(THREAD_EXE) $(THREAD_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 chown: $(CHOWN_OBJ)
-	@echo -e "  LD\t\t$(CHOWN_EXE)"
+	@echo $(ECHOFLAGS) "  LD\t\t$(CHOWN_EXE)"
 	@$(LD) $(LDFLAGS) -o $(CHOWN_EXE) $(CHOWN_OBJ) -L../tools/i386-hydrax/lib/ -lc
 
 .c.o:
-	@echo -e "  CC\t\t"$<
+	@echo $(ECHOFLAGS) "  CC\t\t"$<
 	@$(CC) $(CFLAGS) -c $< -o $@

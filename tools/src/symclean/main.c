@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <malloc.h>
+#if !defined(__APPLE_CC__)
+#	include <malloc.h>
+#endif
 #include <string.h>
 
 static unsigned char buff[1024];

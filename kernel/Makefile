@@ -12,9 +12,14 @@
 # permission from the author.
 # 
 
-#CC=../tools/bin/i386-hydrax-gcc
-#AS=../tools/bin/i386-hydrax-as
-#LD=../tools/bin/i386-hydrax-ld
+CC=../tools/bin/i386-hydrax-gcc
+AS=../tools/bin/i386-hydrax-as
+LD=../tools/bin/i386-hydrax-ld
+ECHOFLAGS=-e
+
+ifneq ($(shell echo -e "Hello"),Hello)
+	ECHOFLAGS=
+endif
 
 CFLAGS=-g -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
 	-DKERNEL_CODE -Iinclude
@@ -78,13 +83,13 @@ clean:
 	rm -f initrd.img
 
 kernel: $(SOURCES)  
-	@echo -e "  LINK\t\thydrax"
+	@echo $(ECHOFLAGS) "  LINK\t\thydrax"
 	@$(LD) $(LDFLAGS) -o hydrax $(SOURCES)
 	
-	@echo -e "  SYMS\t\thydrax.map"
+	@echo $(ECHOFLAGS) "  SYMS\t\thydrax.map"
 	@../tools/src/symclean/symclean hydrax.map hydrax.syms
 	
-	@echo -e "  MKINITRD\thydrax.initrd"
+	@echo $(ECHOFLAGS) "  MKINITRD\thydrax.initrd"
 	@../tools/src/mkinitrd/mkinitrd \
 		hydrax.syms /lib/hydrax.syms \
 		../tools/src/mkinitrd/hello.txt /home/hello.txt \
@@ -96,15 +101,15 @@ kernel: $(SOURCES)
 		../files/inittab /etc/inittab \
 		../files/shellrc /etc/shellrc > /dev/null
 		
-	@echo -e "  MKIMAGE\thydrax.img"
+	@echo $(ECHOFLAGS) "  MKIMAGE\thydrax.img"
 	@../tools/src/mkimage/mkimage.sh 
 
 .s.o:
-	@echo -e "  AS\t\t"$<
+	@echo $(ECHOFLAGS) "  AS\t\t"$<
 	@$(AS) $(ASFLAGS) -c $< -o $@
 
 .c.o:
-	@echo -e "  CC\t\t"$<
+	@echo $(ECHOFLAGS) "  CC\t\t"$<
 	@$(CC) $(CFLAGS) -c $< -o $@
 	
 	

@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <syscall.h>
+/* #include <syscall.h> */
 
 /*
  * 

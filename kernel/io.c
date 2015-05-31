@@ -566,8 +566,48 @@ int close(int fd)
 }
 
 /*
+ * Open a directory.
+ */
+DIR *opendir(char *path)
+{
+	int fd;
+	file_t *desc;
+	fd = open(path, NULL, NULL);
+	if (fd == -1)
+		return NULL;
+	desc = get_file_descriptor(fd);
+	assert(desc != NULL);
+	return (DIR*) &desc->fd;
+}
+
+/*
+ * Read a directory entry.
+ */
+int readdir_r(DIR *dir, struct dirent *entry, struct dirent **result)
+{
+	file_t *f;
+	f = get_file_descriptor(*dir);
+	if (f == NULL)
+	{
+		current_task->errno = EBADF;
+		return -1;
+	}
+	*result = vfs_readdir(f->node, f->offset++, entry);
+	return 0;
+}
+
+/*
+ * Close a directory.
+ */
+int closedir(DIR *dir)
+{
+	return close((int) *dir);
+}
+
+/*
  * read a directory
  */
+#if 0
 int readdir(unsigned int fd, struct dirent *dirent, unsigned int count)
 {
 	int i = 0;
@@ -585,6 +625,7 @@ int readdir(unsigned int fd, struct dirent *dirent, unsigned int count)
 	}
 	return i;
 }
+#endif
 
 /*
  * Writes to a file descriptor

@@ -64,7 +64,7 @@ static syscall_t syscalls[] =
 	{ &write, 3 },
 	{ &read, 3 },
 	{ &kill, 2 },
-	{ &readdir, 3 },
+	{ /*&readdir*/ NULL, 3 },
 	{ &reboot, 0 },
 	{ &stat, 2 },
 	{ &time, 1 },
@@ -116,6 +116,9 @@ static syscall_t syscalls[] =
 	{ &pthread_create, 4 },
 	{ &pthread_exit, 1 },
 	{ &uname, 1 },
+	{ &opendir, 1 },
+	{ &closedir, 1 },
+	{ &readdir_r, 3 },
 };
 
 /*

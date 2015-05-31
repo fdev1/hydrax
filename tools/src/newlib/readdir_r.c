@@ -14,15 +14,6 @@
 #include <dirent.h>
 #include "syscalls.h"
 
-/* ssyscall3(SYSCALL_READDIR, int, readdir, unsigned int, fd, struct dirent*, dirent, unsigned int, count); */
-
-struct dirent hydrax_dirent;
-
-struct dirent *readdir(DIR* dirp)
-{
-	struct dirent *direntp;
-	if (readdir_r(dirp, &hydrax_dirent, &direntp))
-		return NULL;
-	return direntp;
-}
+ssyscall3(SYSCALL_READDIR_R, int, readdir_r, 
+	DIR*, dirp, struct dirent*, entry, struct dirent**, result);
 

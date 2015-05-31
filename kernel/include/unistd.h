@@ -53,9 +53,25 @@ int open(const char *pathname, int flags, ...);
 int close(int fd);
 
 /*
+ * Open a directory.
+ */
+DIR *opendir(char *path);
+
+/*
+ * Close a directory.
+ */
+int closedir(DIR* dir);
+
+/*
+ * Read a directory (re-entrant).
+ */
+int readdir_r(DIR *dir, struct dirent *entry, struct dirent **result);
+
+/*
  * read the next entry in a directory
  */
-int readdir(unsigned int fd, struct dirent *dirent, unsigned int count);
+/*int readdir(unsigned int fd, struct dirent *dirent, unsigned int count);*/
+struct dirent *readdir(DIR* dir);
 
 /*
  * Writes to a file descriptor

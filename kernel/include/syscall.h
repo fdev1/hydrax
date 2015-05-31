@@ -84,8 +84,11 @@
 #define SYSCALL_PTHREAD_CREATE	(60)
 #define SYSCALL_PTHREAD_EXIT		(61)
 #define SYSCALL_UNAME			(62)
+#define SYSCALL_OPENDIR			(63)
+#define SYSCALL_CLOSEDIR			(64)
+#define SYSCALL_READDIR_R		(65)
 
-#define SYSCALL_COUNT			(63)
+#define SYSCALL_COUNT			(66)
 
 /*
  * initialize system call interface

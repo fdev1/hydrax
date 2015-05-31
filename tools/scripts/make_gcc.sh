@@ -98,6 +98,7 @@ XBUILD=$(gcc -dumpmachine)
 XHOST=$(gcc -dumpmachine)
 WIN32=0
 JOBS=1
+BUILD_BINUTILS=1
 
 last_error=0
 
@@ -106,7 +107,7 @@ last_error=0
 #
 case $(uname) in
 	CYGWIN*)
-		XHOST=i686-pc-mingw32
+		#XHOST=i686-pc-mingw32
 		JOBS=$(cat /proc/cpuinfo | grep processor | wc -l)
 		export PATH=/opt/gcc-tools/epoch2/bin/:$PATH
 	;;
@@ -147,6 +148,9 @@ echo -e "$BULLET Jobs: $JOBS"
 echo -e "$BULLET MAKE_OPTS: $MAKE_OPTS"
 echo -e "$BULLET Prefix: $PREFIX"
 
+
+export PATH=$PREFIX:$PATH
+
 echo -e "$BULLET Copying system includes..."
 scripts/copy_headers.sh > /dev/null || last_error=1
 if [ "$last_error" == "1" ]; then
@@ -162,7 +166,6 @@ dowget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz
 dowget http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz
 dowget ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 dowget http://isl.gforge.inria.fr/isl-0.14.tar.gz
-#dowget http://www.bastoul.net/cloog/pages/download/count.php3?url=./cloog-0.18.3.tar.gz
 dowget http://www.bastoul.net/cloog/pages/download/cloog-0.18.3.tar.gz
 
 echo -e "$BULLET Cleaning up working directory..."
@@ -176,97 +179,98 @@ rm -fr mpfr-3.1.2
 rm -fr mpc-1.0.3
 rm -fr build
 
-dotar ../tmp/binutils-2.24.tar.gz
-dotar ../tmp/isl-0.14.tar.gz
-dotar ../tmp/cloog-0.18.3.tar.gz
+if [ $BUILD_BINUTILS == 1 ]; then
 
-echo -e "$BULLET Preparing source..."
-mv isl-0.14 binutils-2.24/isl
-mv cloog-0.18.3 binutils-2.24/cloog
+	dotar ../tmp/binutils-2.24.tar.gz
+	#dotar ../tmp/isl-0.14.tar.gz
+	#dotar ../tmp/cloog-0.18.3.tar.gz
+	#dotar ../tmp/gmp-6.0.0a.tar.lz
+	#echo -e "$BULLET Preparing source..."
+	#mv isl-0.14 binutils-2.24/isl
+	#mv cloog-0.18.3 binutils-2.24/cloog
+	#mv gmp-6.0.0 binutils-2.24/gmp
 
-echo -e "$BULLET Customizing source..."
-cp binutils/config.sub binutils-2.24/config.sub
-cp binutils/config.bfd binutils-2.24/bfd/config.bfd
-cp binutils/gas_configure.tgt binutils-2.24/gas/configure.tgt
-cp binutils/ld_configure.tgt binutils-2.24/ld/configure.tgt
-cp binutils/elf_i386_hydrax.sh binutils-2.24/ld/emulparams/elf_i386_hydrax.sh
-cp binutils/Makefile.am binutils-2.24/ld/Makefile.am
-#diff -rupN ../binutils-tmp/binutils-2.24/ binutils-2.24/ > binutils-2.24.patch
+	echo -e "$BULLET Customizing source..."
+	cp binutils/config.sub binutils-2.24/config.sub
+	cp binutils/config.bfd binutils-2.24/bfd/config.bfd
+	cp binutils/gas_configure.tgt binutils-2.24/gas/configure.tgt
+	cp binutils/ld_configure.tgt binutils-2.24/ld/configure.tgt
+	cp binutils/elf_i386_hydrax.sh binutils-2.24/ld/emulparams/elf_i386_hydrax.sh
+	cp binutils/Makefile.am binutils-2.24/ld/Makefile.am
+	#diff -rupN ../binutils-tmp/binutils-2.24/ binutils-2.24/ > binutils-2.24.patch
 
-#echo -e "$BULLET Applying binutils-2.24.patch..."
-#cd binutils-2.24
-#patch -p1 < ../patches/binutils-2.24.patch > /dev/null || last_error=1
-#if [ "$last_error" == "1" ]; then
-#	echo -e "$REDBUL Error applying patches/binutils-2.24.patch!!"
-#	exit -1
-#fi
-#cd ..
+	#echo -e "$BULLET Applying binutils-2.24.patch..."
+	#cd binutils-2.24
+	#patch -p1 < ../patches/binutils-2.24.patch > /dev/null || last_error=1
+	#if [ "$last_error" == "1" ]; then
+	#	echo -e "$REDBUL Error applying patches/binutils-2.24.patch!!"
+	#	exit -1
+	#fi
+	#cd ..
 
-echo -e "$BULLET Running automake..."
-cd binutils-2.24/ld
-aclocal-1.11
-automake-1.11
-cd ../..
+	echo -e "$BULLET Running automake..."
+	cd binutils-2.24/ld
+	aclocal-1.11
+	automake-1.11
+	cd ../..
 
-echo -e "\n"
-echo -e "$BULLET Configuring binutils..."
+	echo -e "\n"
+	echo -e "$BULLET Configuring binutils..."
 
-mkdir -p build/binutils
-cd build/binutils
-CMD="
-../../binutils-2.24/configure \
-	--build=$XBUILD \
-	--host=$XHOST \
-	--target=$XTARGET \
-	--prefix=$PREFIX \
-	--with-sysroot=$PREFIX \
-	--libdir=$PREFIX \
-	--with-lib-path=$PREFIX/lib \
-	--disable-nls \
-	--with-pkgversion=Hydrax_Binutils \
-	--with-bugurl=http://bugs.hydrax.com \
-	--disable-werror
-"
-echo $CMD
-echo
-${CMD} || last_error=1
-if [ "$last_error" == "1" ]; then
-	echo -e "$REDBUL Error configuring binutils!"
-	exit -1
+	mkdir -p build/binutils
+	cd build/binutils
+	CMD="
+	../../binutils-2.24/configure \
+		--build=$XBUILD \
+		--host=$XHOST \
+		--target=$XTARGET \
+		--prefix=$PREFIX \
+		--disable-nls \
+		--with-pkgversion=Hydrax_Binutils \
+		--with-bugurl=http://bugs.hydrax.com \
+		--disable-werror
+	"
+	[ $QUIET == 1 ] || echo $CMD 
+	[ $QUIET == 1 ] || echo
+	${CMD} || last_error=1
+	if [ "$last_error" == "1" ]; then
+		echo -e "$REDBUL Error configuring binutils!"
+		exit -1
+	fi
+
+	echo -e "$BULLET Compiling binutils..."
+	make $MAKE_OPTS || last_error=1
+	if [ "$last_error" == "1" ]; then
+		echo -e "$REDBUL Error compiling binutils!"
+		exit -1
+	fi
+	echo -e "$BULLET Installing binutils-2.24..."
+	make install || last_error=1
+	if [ "$last_error" == "1" ]; then
+		echo -e "$REDBUL Error installing binutils!"
+		exit -1
+	fi
+
+	echo -e "$BULLET Cleaning up binutils..."
+	cd ../..
+	rm -fr build/
+	rm -fr binutils-2.24/
+
 fi
-
-echo -e "$BULLET Compiling binutils..."
-make $MAKE_OPTS || last_error=1
-if [ "$last_error" == "1" ]; then
-	echo -e "$REDBUL Error compiling binutils!"
-	exit -1
-fi
-echo -e "$BULLET Installing binutils-2.24..."
-make install || last_error=1
-if [ "$last_error" == "1" ]; then
-	echo -e "$REDBUL Error installing binutils!"
-	exit -1
-fi
-
-echo -e "$BULLET Cleaning up binutils..."
-cd ../..
-rm -fr build/
-rm -fr binutils-2.24/
-#fi
 
 dotar ../tmp/gcc-4.8.4.tar.gz
 dotar ../tmp/gmp-6.0.0a.tar.lz
 dotar ../tmp/mpfr-3.1.2.tar.xz
 dotar ../tmp/mpc-1.0.3.tar.gz
-dotar ../tmp/isl-0.14.tar.gz
-dotar ../tmp/cloog-0.18.3.tar.gz
+#dotar ../tmp/isl-0.14.tar.gz
+#dotar ../tmp/cloog-0.18.3.tar.gz
 
 echo -e "$BULLET Copying optional packages..."
 mv -f gmp-6.0.0 gcc-4.8.4/gmp
 mv -f mpfr-3.1.2 gcc-4.8.4/mpfr
 mv -f mpc-1.0.3 gcc-4.8.4/mpc
-mv -f isl-0.14 gcc-4.8.4/isl
-mv -f cloog-0.18.3 gcc-4.8.4/cloog
+#mv -f isl-0.14 gcc-4.8.4/isl
+#mv -f cloog-0.18.3 gcc-4.8.4/cloog
 
 #echo -e "$BULLET Applying gcc-4.8.4.patch..."
 #cd gcc-4.8.4
@@ -305,13 +309,13 @@ cd build/gcc
 	--prefix=$PREFIX \
 	--host=$XHOST \
 	--build=$XBUILD \
-	--with-sysroot=$PREFIX \
 	--disable-multilib \
 	--disable-nls \
 	--disable-wchar_t \
 	--with-pkgversion=Hydrax_GCC \
 	--with-bugurl=http://bugs.hydrax.com \
 	--enable-languages=c || last_error=1
+	#--with-sysroot=$PREFIX \
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error in configure gcc!"
 	exit -1

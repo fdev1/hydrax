@@ -1,11 +1,9 @@
 #!/bin/bash
 #
 # Some dependencies:
-#  automake-1.11
-#  aclocal-1.11
+#  autotools
 #  libtool
 #  GNU Make 4.1
-#  Autoconf-2.64 (on cygwin: gcc-tools-epoch2-autoconf)
 #  GNU Tar, xz, gzip, lzip
 #
 # On cygwin only i686-pc-mingw32 is
@@ -93,7 +91,6 @@ cd "$SCRIPTPATH"
 mkdir -p tmp/tools
 AUTOPATH=$(readlink -f tmp/tools)
 export PATH=$AUTOPATH/bin:$PATH
-echo $AUTOPATH
 
 BULLET="\033[0;32m *\033[0m"
 REDBUL="\033[0;31m !!\033[0m"
@@ -109,7 +106,12 @@ NEED_AUTOMAKE_1_11=0
 
 last_error=0 
 
-if [ "$(which automake-1.11)" == "" ]; then
+#if [ "$(which automake-1.11)" == "" ]; then
+#	NEED_AUTOMAKE_1_11=1
+#fi
+if [ ! -x $AUTOPATH/bin/automake-1.11 ] ||
+	[ ! -x $AUTOPATH/bin/aclocal-1.11 ] ||
+	[ ! -x $AUTOPATH/bin/autoconf-2.64 ]; then
 	NEED_AUTOMAKE_1_11=1
 fi
 

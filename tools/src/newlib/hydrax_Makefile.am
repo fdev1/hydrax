@@ -30,6 +30,7 @@ lib_a_SOURCES = syscalls.c \
 		waitpid.c \
 		dup.c \
 		dup2.c \
+		readdir_r.c \
 		readdir.c \
 		lseek.c \
 		opendir.c \

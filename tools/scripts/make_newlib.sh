@@ -66,6 +66,10 @@ cp newlib/waitpid.c $NEWLIB_SRC/newlib/libc/sys/hydrax/waitpid.c
 cp newlib/dup.c $NEWLIB_SRC/newlib/libc/sys/hydrax/dup.c
 cp newlib/dup2.c $NEWLIB_SRC/newlib/libc/sys/hydrax/dup2.c
 cp newlib/readdir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/readdir.c
+cp newlib/readdir_r.c $NEWLIB_SRC/newlib/libc/sys/hydrax/readdir_r.c
+cp newlib/lseek.c $NEWLIB_SRC/newlib/libc/sys/hydrax/lseek.c
+cp newlib/opendir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/opendir.c
+cp newlib/closedir.c $NEWLIB_SRC/newlib/libc/sys/hydrax/closedir.c
 
 cp newlib/syscalls.c newlib-2.2.0.20150225/newlib/libc/sys/hydrax/syscalls.c
 cp newlib/config.h newlib-2.2.0.20150225/newlib/libc/include/sys/config.h

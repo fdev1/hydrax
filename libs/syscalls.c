@@ -89,7 +89,7 @@ ssyscall1(SYSCALL_PIPE, int, pipe, int*, pipefd);
 ssyscall2(SYSCALL_DUP2, int, dup2, int, oldfd, int, newfd);
 ssyscall3(SYSCALL_OPEN, int, sysopen, const char*, path, int, flags, int, mode);
 ssyscall2(SYSCALL_KILL, int, kill, pid_t, pid, int, signum);
-ssyscall3(SYSCALL_READDIR, int, readdir, unsigned int, fd, struct dirent*, dirent, unsigned int, count);
+/*ssyscall3(SYSCALL_READDIR, int, readdir, unsigned int, fd, struct dirent*, dirent, unsigned int, count);*/
 ssyscall2(SYSCALL_STAT, int, stat, const char*, path, struct stat*, buf);
 ssyscall1(SYSCALL_TIME, time_t, time, time_t*, t);
 ssyscall1(SYSCALL_CHDIR, int, chdir, const char*, path);

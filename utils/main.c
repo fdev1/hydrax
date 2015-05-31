@@ -97,19 +97,75 @@ static void parse_command(char *cmd)
 	else if (!strcmp(pcmd, "ls"))
 	{
 		char *path = cwd;
-
+		struct dirent *dp;	
+		
 		if (arg_c > 1)
 			path = argv(cmd, 1, buf);
 
 		int i;
-		struct dirent entries[100];
-		int rootfd = open(path, 0);
-		if (rootfd == -1)
+		/*struct dirent entries[100];*/
+		DIR *dirp = opendir(path);
+		if (dirp == NULL)
 		{
 			printf("error: could not open directory.");
 			return;
 		}
 		
+		dp = readdir(dirp);
+		
+		while (dp != NULL)
+		{
+			char b[100];
+			char *p, *bb;
+			
+			p = path;
+			bb = b;
+			struct stat st;
+			size_t filesz;
+			char type[2];
+			type[0] = '-';
+			type[1] = 0;
+
+			while (*p != 0)
+				*bb++ = *p++;
+
+			if (*(p - 1) != '/')
+				*bb++ = '/';
+			
+			p = dp->name;
+			while (*p != 0)
+				*bb++ = *p++;
+			*bb++ = 0;
+	
+			int ret = stat(b, &st);
+			if (ret < 0)
+			{	
+				printf(" [stat returned %i] ", ret);
+			}
+
+			filesz = st.st_size;
+
+			if (S_ISDIR(st.st_mode))
+			{
+				type[0] = 'd';
+			}
+			else if (S_ISCHR(st.st_mode))
+				type[0] = 'c';
+
+			printf(type);
+			printf("-------- ");
+			printf("%i:%i\t", st.st_uid, st.st_gid);
+			printf("%i\t", filesz);
+			printf("%s\n", dp->name);
+			
+			
+			dp = readdir(dirp);
+		}
+		
+		putchar('\n');
+		closedir(dirp);
+		
+#if 0
 		int ent_c = readdir(rootfd, entries, 100);
 		printf("Found %i entries.\n", ent_c);
 
@@ -161,6 +217,7 @@ static void parse_command(char *cmd)
 		}
 		putchar('\n');
 		close(rootfd);
+#endif
 	}
 	else if (!strcmp(pcmd, "time"))
 	{

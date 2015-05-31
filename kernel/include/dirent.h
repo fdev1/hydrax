@@ -26,6 +26,8 @@
 #define MAX_FILENAME 255
 #endif
 
+typedef int DIR;
+
 /*
  * dirent structure
  */

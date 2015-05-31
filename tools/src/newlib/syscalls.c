@@ -67,11 +67,6 @@ void* sbrk(ptrdiff_t incr)
 	return (void*) -1;
 }
 
-off_t lseek(int fd, off_t offset, int whence)
-{
-	return -1;
-}
-
 int link(const char *old, const char *new)
 {
 	return -1;

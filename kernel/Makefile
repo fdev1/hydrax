@@ -123,6 +123,10 @@ run: kernel
 debug: kernel
 	qemu-system-i386 -S -s -m size=256 -hda ../hydrax.img 2> /dev/null &
 	gdb --init-command=hydrax_gdbinit
+
+debug-tui: kernel
+	qemu-system-i386 -S -s -m size=256 -hda ../hydrax.img 2> /dev/null &
+	gdb --tui --init-command=hydrax_gdbinit
 	
 withdebug: kernel
 	qemu-system-i386 -S -s -m 256M -hda ../hydrax.img 2> /dev/null 

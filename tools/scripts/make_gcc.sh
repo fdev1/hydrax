@@ -184,8 +184,8 @@ dowget ftp://ftp.gnu.org/gnu/gcc/gcc-4.8.4/gcc-4.8.4.tar.gz
 dowget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.lz
 dowget http://www.mpfr.org/mpfr-current/mpfr-3.1.2.tar.xz
 dowget ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
-dowget http://isl.gforge.inria.fr/isl-0.14.tar.gz
-dowget http://www.bastoul.net/cloog/pages/download/cloog-0.18.3.tar.gz
+#dowget http://isl.gforge.inria.fr/isl-0.14.tar.gz
+#dowget http://www.bastoul.net/cloog/pages/download/cloog-0.18.3.tar.gz
 
 if [ $NEED_AUTOMAKE_1_11 == 1 ]; then
 	dowget http://ftp.gnu.org/gnu/automake/automake-1.11.1.tar.gz

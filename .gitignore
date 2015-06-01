@@ -4,3 +4,5 @@ image/3rdparty/
 image/
 tmp/
 hydrax.img
+*.exe
+*.o

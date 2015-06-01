@@ -8,6 +8,10 @@
 #endif
 #include <assert.h>
 
+#ifdef MAX_PATH
+#undef MAX_PATH
+#endif
+
 #define MAX_FILENAME	(255)
 #define MAX_PATH		(255)
 
@@ -277,10 +281,12 @@ int main(int argc, char **argv)
 	char **args;
 	vfs_node_t *node, *new_node, **tmp;
 	
+	printf("Working...\n");
+	
 	initrd_header_t header;
 	header.magic = 0x42424242;
 	header.sz = (argc - 1) / 2;
-	
+
 	/*
 	 * TODO: Right now we're allocating enough memory 
 	 * for 5 nodes for each entry. We need to calculate
@@ -311,13 +317,14 @@ int main(int argc, char **argv)
 		initrd_path = *args++;
 		nodes_count += find_parent(initrd_path, &node);
 		assert(node != NULL);
+		
 		stream = fopen(path, "r");
 		if(stream == 0)
 		{
 			printf("Error: file not found: %s\n", path);
 			return -1;
 		}
-		
+
 		fseek(stream, 0, SEEK_END);
 		new_node = p_node++;
 		*new_node = VFS_NODE_INITIALIZER(FS_FILE);
@@ -337,7 +344,7 @@ int main(int argc, char **argv)
 		printf("Processing %s...\n", initrd_path);
 		
 	}
-	
+
 	new_node = root;
 	offset = sizeof(initrd_header_t) + (sizeof(vfs_node_t) * nodes_count);
 	for (i = 0; i < nodes_count; i++)
@@ -387,5 +394,5 @@ int main(int argc, char **argv)
 	}
 
 	fclose(wstream);
-
+	return 0;
 }

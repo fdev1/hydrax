@@ -1,8 +1,8 @@
 #!/bin/sh
 
 ECHO="echo -e"
-DEBUGFS=$(which debugfs)
-E2FSCK=$(which e2fsck)
+DEBUGFS=$(which debugfs 2> /dev/null)
+E2FSCK=$(which e2fsck 2> /dev/null)
 
 if [ "$DEBUGFS" == "" ]; then
 

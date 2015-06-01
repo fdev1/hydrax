@@ -3,8 +3,12 @@
 #
 # Cywin dependencies:
 #
+#  NOTE!!: On Windows XP x64 only 32-bit Cygwin is supported
+#  NOTE!!: On Windows XP x64 only 32-bit QEMU works!
+#
 #   gcc-core
 #   gcc-g++
+#   cygwin32-gcc-core (for 64-bit Cygwin only)
 #   binutils
 #   make
 #   lzip
@@ -12,7 +16,7 @@
 #   wget
 #   e2fsprogs
 #   gdb
-#   
+#   texinfo
 #
 
 

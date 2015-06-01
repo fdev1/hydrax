@@ -12,6 +12,7 @@
 #   wget
 #   e2fsprogs
 #   gdb
+#   texinfo
 #   
 #
 

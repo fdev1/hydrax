@@ -131,7 +131,7 @@ echo -e "$BULLET Configuring newlib..."
 mkdir -p build/newlib
 cd build/newlib
 ../../newlib-2.2.0.20150225/configure --prefix="$PREFIX" \
-	--with-sysroot=$PREFIX --target=i386-hydrax || last_error=1
+	--with-sysroot=$PREFIX --disable-docs --target=i386-hydrax || last_error=1
 if [ "$last_error" == "1" ]; then
 	echo -e "$REDBUL Error configuring newlib!!"
 	exit -1

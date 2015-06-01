@@ -4,12 +4,14 @@
 # Cywin dependencies:
 #
 #   gcc-core
+#   gcc-g++
 #   binutils
-#   autoconf-2.5
 #   make
 #   lzip
 #   xz
 #   wget
+#   e2fsprogs
+#   gdb
 #   
 #
 
@@ -17,7 +19,7 @@
 SCRIPTPATH=$( cd $(dirname $0)/.. ; pwd -P )
 cd $SCRIPTPATH
 
-if [ 1 == 2 ]; then
+if [ 1 == 1 ]; then
 lasterr=0
 scripts/make_gcc.sh || lasterr=1
 if [ "$lasterr" == "1" ]; then

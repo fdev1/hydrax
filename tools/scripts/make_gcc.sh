@@ -212,29 +212,6 @@ if [ $BUILD_BINUTILS == 1 ]; then
 		dotar ../tmp/autoconf-2.64.tar.xz
 		dotar ../tmp/libtool-2.4.tar.xz
 		
-		cd automake-1.11.1
-		echo -e "$BULLET Configuring automake-1.11.6..."
-		./configure --prefix=$AUTOPATH || last_error=1
-		if [ $last_error == 1 ]; then
-			echo -e "$REDBUL Error configuring automake-1.11!!"
-			exit 0
-		fi
-		echo -e "$BULLET Compiling automake-1.11..."
-		make $MAKE_OPTS || last_error=1
-		if [ $last_error == 1 ]; then
-			echo -e "$REDBUL Error compiling automake-1.11!!"
-			exit 0
-		fi
-		echo -e "$BULLET Installing automake-1.11..."
-		make install || last_error=1
-		if [ $last_error == 1 ]; then
-			echo -e "$REDBUL Error installing automake-1.11!!"
-			exit -1
-		fi
-		echo -e "$BULLET Cleaning up automake-1.11..."
-		cd ..
-		rm -fR automake-1.11.1
-
 		cd autoconf-2.64
 		echo -e "$BULLET Configuring autoconf-2.64..."
 		./configure --prefix=$AUTOPATH || last_error=1
@@ -257,6 +234,29 @@ if [ $BUILD_BINUTILS == 1 ]; then
 		echo -e "$BULLET Cleaning up autoconf-2.64..."
 		cd ..
 		rm -fR autoconf-2.64
+
+		cd automake-1.11.1
+		echo -e "$BULLET Configuring automake-1.11.6..."
+		./configure --prefix=$AUTOPATH || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error configuring automake-1.11!!"
+			exit -1
+		fi
+		echo -e "$BULLET Compiling automake-1.11..."
+		make $MAKE_OPTS || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error compiling automake-1.11!!"
+			exit -1
+		fi
+		echo -e "$BULLET Installing automake-1.11..."
+		make install || last_error=1
+		if [ $last_error == 1 ]; then
+			echo -e "$REDBUL Error installing automake-1.11!!"
+			exit -1
+		fi
+		echo -e "$BULLET Cleaning up automake-1.11..."
+		cd ..
+		rm -fR automake-1.11.1
 
 		echo -e "$BULLET Configuring libtool-2.4..."
 		cd libtool-2.4

@@ -29,7 +29,7 @@ THREAD_EXE=threadtest
 CHOWN_OBJ=chown.o
 CHOWN_EXE=chown
 
-CFLAGS=-g -fno-stack-protector
+CFLAGS=-ggdb -fno-stack-protector
 LDFLAGS=-melf_i386
 
 all: init pipe echo chown

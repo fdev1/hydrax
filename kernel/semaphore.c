@@ -170,7 +170,6 @@ void semaphore_busywait_excl(semaphore_t *s)
 __attribute__((weak))
 void semaphore_waitsleep(semaphore_t *s)
 {
-	int i = 0;
 	mutex_waitsleep(&s->exclusive);
 	while (1)
 	{

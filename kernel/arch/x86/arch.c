@@ -130,7 +130,8 @@ void arch_queue_user_task(void *task_fn, void *ret_fn, uint32_t argc, uint32_t *
 	if (ret_fn == NULL)
 		ret_fn = (void*) current_task->registers->eip;
 	
-	*pstack-- = (uint32_t) pstack;
+	*pstack = (uint32_t) pstack;
+	pstack--;
 	
 	while (argc--)
 		*pstack-- = (uint32_t) argv;

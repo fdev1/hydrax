@@ -22,8 +22,8 @@ ifneq ($(shell echo -e "Hello"),Hello)
 endif
 
 CFLAGS=-g -m32 -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
-	-DKERNEL_CODE -Iinclude
-ASFLAGS=-g --32
+	-DKERNEL_CODE -Iinclude -Wunused-variable
+ASFLAGS=-ggdb --32
 LDFLAGS=-melf_i386 -Tarch/x86/hydrax.ld -Map hydrax.map
 
 

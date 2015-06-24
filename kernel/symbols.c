@@ -28,7 +28,6 @@ symbol_t symbols[1000];
 
 void symbols_init(void)
 {
-	uint32_t i = 0;
 	vfs_node_t *node = vfs_open("/lib/hydrax.syms", NULL);
 	if (likely(node != NULL))
 	{

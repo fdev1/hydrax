@@ -340,16 +340,18 @@ sighandler_t signal(int sig, sighandler_t disp)
  */
 int sigqueue(pid_t tid, int sig, const union sigval value)
 {
-	task_t *tmp;
+	task_t *tmp = NULL;
 	const uint32_t sigbit = 1 << (sig - 1);
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
 
 	if (unlikely(sig < 1 || sig > 32))
 		return EINVAL;
-	tmp = tasks;
-	while (tmp != NULL && tmp->id != tid)
-		tmp = tmp->next;
-	if (unlikely(tmp == NULL))
+	
+	iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+	LINKED_LIST_SEEK_UNTIL(iter, iter.current->val->id == tid);
+	if (unlikely(iter.current == NULL))
 		return ESRCH;
+	tmp = iter.current->val;
 	
 	if (likely((tmp->sig_pending[0] & sigbit) == 0))
 	{
@@ -434,24 +436,24 @@ int pthread_kill(pthread_t t, int signum)
  */
 int pthread_kill_nolock(pthread_t tid, int sig)
 {
-	task_t *tmp;
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
+	iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+	
 	if (tid == 0)
 	{
-		tmp = tasks;
-		while (tmp != NULL)
+		while (iter.current != NULL)
 		{
-			queue_signal(tmp, sig);
-			tmp = tmp->next;
+			queue_signal(iter.current->val, sig);
+			LINKED_LIST_MOVE_NEXT(iter);
 		}
 	}
 	else
 	{
-		tmp = tasks;
-		while (tmp != NULL && tmp->id != tid)
-			tmp = tmp->next;
-		if (tmp == NULL)
+		LINKED_LIST_SEEK_UNTIL(iter, 
+			iter.current->val->id == tid);
+		if (iter.current == NULL)
 			return -1;
-		queue_signal(tmp, sig);
+		queue_signal(iter.current->val, sig);
 	}
 	return 0;
 }
@@ -473,26 +475,26 @@ int kill(pid_t pid, int signum)
  */
 int kill_nolock(pid_t pid, int sig)
 {
-	task_t *tmp;
-	const uint32_t sigbit = 1 << (sig - 1);
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
+	iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+		
 	if (pid == 0)
 	{
-		tmp = tasks;
-		while (tmp != NULL)
+		while (iter.current != NULL)
 		{
-			if (tmp->pid == pid && tmp->main_thread == tmp)
-				queue_signal(tmp, sig);
-			tmp = tmp->next;
+			if (iter.current->val->pid == pid && 
+				iter.current->val->main_thread == iter.current->val)
+				queue_signal(iter.current->val, sig);
+			LINKED_LIST_MOVE_NEXT(iter);
 		}
 	}
 	else
 	{
-		tmp = tasks;
-		while (tmp != NULL && tmp->pid != pid && tmp->main_thread != tmp)
-			tmp = tmp->next;
-		if (tmp == NULL)
+		LINKED_LIST_SEEK_UNTIL(iter, iter.current->val->pid == pid && 
+			iter.current->val->main_thread == iter.current->val);
+		if (iter.current == NULL)
 			return -1;
-		queue_signal(tmp, sig);
+		queue_signal(iter.current->val, sig);
 	}
 	return 0;
 }

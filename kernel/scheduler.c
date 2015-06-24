@@ -14,6 +14,7 @@
 
 #include <arch/arch.h>
 #include <mutex.h>
+#include <kheap.h>
 #include <scheduler.h>
 #include <mmu.h>
 #include <memory.h>
@@ -25,12 +26,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <printk.h>
-#include <kheap.h>
 #include <procfs.h>
 #include <dirent.h>
 #include <io.h>
 #include <errno.h>
 #include <signal.h>
+#include <linkedlist.h>
 
 /*
  * debug symbols
@@ -56,7 +57,7 @@ extern void signal_handler(int signum);
 /*
  * Global symmbols
  */
-task_t *tasks = NULL;
+DEFINE_LINKED_LIST(task_t, tasks_list);
 task_t *current_task = NULL;
 mutex_t schedule_lock = MUTEX_INITIALIZER;
 
@@ -111,11 +112,8 @@ void scheduler_init(void)
 	idle_task.thread_stack = NULL;
 	idle_task.procfs_node = NULL;
 	idle_task.parent = NULL;
-	idle_task.next_thread = NULL;
-	idle_task.threads = &idle_task;
-	idle_task.children = NULL;
-	idle_task.next_child = NULL;
-	idle_task.next = NULL;
+	idle_task.children_list = LINKED_LIST_INIT(task_t);
+	idle_task.threads_list = LINKED_LIST_INIT(task_t);
 	
 	clear_task_signals(&idle_task);
 	
@@ -178,9 +176,9 @@ void schedule_prelocked(void)
 	 */
 	if (unlikely(current_task == &idle_task))
 	{
-		if (likely(tasks != NULL))
+		if (likely(tasks_list.count != 0))
 		{
-			tmp = tasks;
+			tmp = LINKED_LIST_MOVE_FIRST(tasks_list);
 		}
 		else
 		{
@@ -190,10 +188,11 @@ void schedule_prelocked(void)
 	}
 	else
 	{
-		if (unlikely(current_task->next == NULL && tasks == NULL))
+		if (unlikely(tasks_list.current->next == NULL && tasks_list.count == 0))
 			tmp = &idle_task;
 		else
-			tmp = current_task->next;
+			tmp = LINKED_LIST_MOVE_NEXT(tasks_list);
+		
 	}
 
 	/*
@@ -210,7 +209,7 @@ void schedule_prelocked(void)
 				tmp = &idle_task;
 				break;
 			}
-			tmp = tasks;
+			tmp = LINKED_LIST_MOVE_FIRST(tasks_list);
 		}
 
 		/* wake up the task if it has a signal */
@@ -223,7 +222,7 @@ void schedule_prelocked(void)
 
 		if (tmp->status == TASK_STATE_RUNNING)
 			break;
-		tmp = tmp->next;
+		tmp = LINKED_LIST_MOVE_NEXT(tasks_list);
 	}
 	
 	assert(tmp != &idle_task || tmp->sig_pending[0] == 0);
@@ -258,15 +257,7 @@ void yield() __attribute__((weak, alias("schedule")));
  */
 unsigned int gettaskcount(void)
 {
-	unsigned int i = 1;
-	task_t *tmp;
-	tmp = tasks;
-	while (tmp->next != NULL)
-	{
-		tmp = tmp->next;
-		i++;
-	}
-	return i;
+	return tasks_list.count;
 }
 
 
@@ -292,21 +283,29 @@ vfs_node_t *scheduler_getcwd(void)
  */
 void __attribute__((__noreturn__)) exit(int exit_code) 
 {
-	task_t *tmp, *parent;
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
+	
 	assert(current_task->id != 0);
 	/* assert(current_task->parent != NULL); */
-	assert(current_task->threads != NULL);
+	assert(current_task->threads_list.count != 0);
 	
 	/*
 	 * Signal all threads to exit and wait
 	 */
 	if (current_task == current_task->main_thread &&
-				current_task->threads->next_thread != NULL)
+				current_task->threads_list.count != 0)
 	{
-		while (current_task->next_thread != NULL)
+		/*
+		 * TODO: I think we need locking here since a child
+		 * thread can spawn a thread that will be added to the
+		 * parent's thread list.
+		 */
+		iter = LINKED_LIST_ITER_INIT(task_t, current_task->threads_list);
+		while (iter.current != NULL)
 		{
-			pthread_kill(current_task->threads->next_thread->id, SIGKILL);
+			pthread_kill(iter.current->val->id, SIGKILL);
 			schedule();
+			LINKED_LIST_MOVE_NEXT(iter);
 		}
 	}
 
@@ -314,16 +313,13 @@ void __attribute__((__noreturn__)) exit(int exit_code)
 	 * If the current task has children make them
 	 * all orphans
 	 */
-	if (unlikely(current_task->children))
+	if (unlikely(current_task->children_list.count != 0))
 	{
 		mutex_wait(&current_task->lock);
-		tmp = current_task->children;
-		while (tmp != NULL)
+		while (current_task->children_list.first != NULL)
 		{
-			parent = tmp->next_child;
-			tmp->parent = NULL;
-			tmp->next_child = NULL;
-			tmp = parent;
+			current_task->children_list.first->val->parent = NULL;
+			LINKED_LIST_REMOVE_FIRST_FREE(task_t, current_task->children_list);
 		}
 		mutex_release(&current_task->lock);
 	}
@@ -359,16 +355,12 @@ void __attribute__((__noreturn__)) exit(int exit_code)
 		 * Remove the current thread from the list of
 		 * threads
 		 */
-		parent = current_task->main_thread;
-		tmp = current_task->threads->next_thread;
-		while (tmp != NULL && tmp != current_task)
-		{
-			parent = tmp;
-			tmp = tmp->next_thread;
-		}
-		assert(parent != NULL);
-		assert(tmp == current_task);
-		parent->next_thread = current_task->next_thread;
+		iter = LINKED_LIST_ITER_INIT(task_t,
+			current_task->main_thread->threads_list);
+		LINKED_LIST_SEEK_UNTIL(iter, 
+			iter.current->val == current_task);
+		LINKED_LIST_REMOVE_CURRENT_FREE(
+			current_task->main_thread->threads_list, iter);
 	}
 	
 	/* send the SIGCHLD signal to parent */
@@ -456,7 +448,6 @@ int execve(const char *path, char *const argv[], char *const envp[])
 	int i, j, l, fd;
 	intptr_t vaddr;
 	char *next_arg;
-	vfs_node_t *node;
 
 	if (unlikely(strlen(path) > MAX_PATH))
 		return ENAMETOOLONG;
@@ -596,13 +587,13 @@ void sleep_ticks(tticks_t ticks)
  */
 static inline int free_task_entry(task_t *t)
 {
-	task_t *tmp, **ptmp;
 	pid_t terminated_pid;
-	
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
+
 	assert(t != NULL);
 	assert(t->main_thread != NULL);
 	
-	if (unlikely(tasks == NULL))
+	if (unlikely(tasks_list.count == 0))
 		return -1;
 
 	/*
@@ -611,22 +602,26 @@ static inline int free_task_entry(task_t *t)
 	 */
 	if (t != t->main_thread)
 	{
+		/*
+		 * This is done by exit().
+		 */
+		#if 0
 		mutex_wait(&t->main_thread->lock);
 		tmp = t->main_thread->threads;
 		while (tmp->next_thread != t)
 			tmp = tmp->next_thread;
 		tmp->next_thread = t->next_thread;
 		mutex_release(&t->main_thread->lock);
+		#endif
 	}
 	else
 	{
 		if (likely(t->parent != NULL))
 		{
 			mutex_wait(&t->parent->lock);
-			ptmp = &t->parent->children;
-			while (*ptmp != NULL && (*ptmp)->next_child != t)
-				ptmp = &(*ptmp)->next_child;
-			*ptmp = t->next_child;
+			iter = LINKED_LIST_ITER_INIT(task_t, t->parent->children_list);
+			LINKED_LIST_SEEK_UNTIL(iter, iter.current->val == t);
+			LINKED_LIST_REMOVE_CURRENT_FREE(t->parent->children_list, iter);
 			mutex_release(&t->parent->lock);
 		}
 	}
@@ -635,13 +630,9 @@ static inline int free_task_entry(task_t *t)
 	 * Remove the entry from the task list 
 	 */
 	mutex_wait(&schedule_lock);
-	ptmp = &tasks;
-	while (*ptmp != t)
-	{
-		ptmp = &(*ptmp)->next;
-		assert(*ptmp != NULL);
-	}
-	*ptmp = t->next;
+	iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+	LINKED_LIST_SEEK_UNTIL(iter, iter.current->val == t);
+	LINKED_LIST_REMOVE_CURRENT_FREE(tasks_list, iter);
 	mutex_release(&schedule_lock);
 
 	/* free the task table entry and the procfs node */
@@ -663,12 +654,12 @@ int waitid(pid_t id, int type)
  */
 pid_t wait(int *status)
 {
-	task_t *tmp;
-	assert(tasks != NULL);
-	tmp = current_task->children;
-	while (tmp != NULL && tmp->status != TASK_STATE_ZOMBIE)
-		tmp = tmp->next_child;
-	return free_task_entry(tmp);
+	/* FIXME: Why is this not locking? */
+	assert(tasks_list.count != 0);
+	LINKED_LIST_MOVE_FIRST(current_task->children_list);
+	LINKED_LIST_SEEK_UNTIL(current_task->children_list,
+		current_task->children_list.current->val->status != TASK_STATE_ZOMBIE);
+	return free_task_entry(current_task->children_list.current->val);
 }
 
 /*
@@ -677,49 +668,43 @@ pid_t wait(int *status)
  */
 int waitpid(pid_t pid, int *status, int options)
 {
-	task_t *tmp, *parent;
+	LINKED_LIST_ITER_STRUCT(task_t) tasks_iter;
 	
 	if (unlikely(pid == -1))
 		return wait(status);
 	
 	/* find the task entry in the task list */
 	mutex_wait(&schedule_lock);
-	tmp = tasks;
-	while (tmp != NULL)
-	{
-		if (unlikely(tmp->pid == pid && tmp->main_thread == tmp))
-			break;
-		tmp = tmp->next;
-	}
+	tasks_iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+	LINKED_LIST_SEEK_UNTIL(tasks_iter, 
+		unlikely(tasks_iter.current->val->pid && 
+		tasks_iter.current->val->main_thread !=  tasks_iter.current->val));
 	mutex_release(&schedule_lock);
 
-	if (tmp == NULL || tmp->parent != current_task)
+	if (tasks_iter.current->val == NULL || tasks_iter.current->val->parent != current_task)
 		return ECHILD;
 
-	while (tmp != NULL && tmp->status != TASK_STATE_ZOMBIE)
+	while (tasks_iter.current != NULL && tasks_iter.current->val->status != TASK_STATE_ZOMBIE)
 	{
 		pause();
 		mutex_wait(&schedule_lock);
-		if (unlikely(tasks == NULL))
+		if (unlikely(tasks_list.count == 0))
 		{
 			mutex_release(&schedule_lock);
 			return -1;
 		}
 
-		tmp = tasks;
-		while (tmp != NULL)
-		{
-			if (unlikely(tmp->pid == pid && tmp->main_thread == tmp))
-				break;
-			tmp = tmp->next;
-		}
+		tasks_iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+		LINKED_LIST_SEEK_UNTIL(tasks_iter,
+			unlikely(tasks_iter.current->val->pid &&
+				tasks_iter.current->val->main_thread != tasks_iter.current->val));
 		mutex_release(&schedule_lock);
 	}
 
-	assert(tmp != NULL); /* task should always exist when calling this right? */
-	*status = tmp->exit_code;
+	assert(tasks_iter.current != NULL);
+	*status = tasks_iter.current->val->exit_code;
 
-	return free_task_entry(tmp);
+	return free_task_entry(tasks_iter.current->val);
 }
 
 /*

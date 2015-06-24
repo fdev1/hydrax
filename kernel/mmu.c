@@ -448,7 +448,6 @@ intptr_t kalloc(uint32_t sz, uint32_t vaddr, uint32_t *phys, uint32_t flags, ...
 
 	if ((flags & KALLOC_OPTN_NOFREE) == 0 && kheap.len)
 	{
-		buffer_t **tmp;
 		buffer_t *buf = (buffer_t*) malloc(sizeof(buffer_t));
 		assert(buf != NULL);
 		buf->address = vaddr;

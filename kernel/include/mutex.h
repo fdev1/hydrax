@@ -57,8 +57,8 @@ mutex_t;
  * initialize a semaphore
  *
  */
-#define MUTEX_INITIALIZER 			(mutex_t) {0,0,0}
-#define MUTEX_INITIALIZER_AUTOSET		(mutex_t) {1,0,0}
+#define MUTEX_INITIALIZER 			(mutex_t) {0,{0},0}
+#define MUTEX_INITIALIZER_AUTOSET		(mutex_t) {1,{0},0}
 #define LIGHT_MUTEX_INITIALIZER		(light_mutex_t) { 0 }
 
 /*

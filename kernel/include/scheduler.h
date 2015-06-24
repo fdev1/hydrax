@@ -25,6 +25,7 @@
 #include <memmap.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#include <linkedlist.h>
 
 #define SCHED_KERNEL_STACK_SIZE		(4096 * 0x10)
 #define CONFIG_ENV_INITIAL_SIZE		(1024)
@@ -38,12 +39,19 @@
 #define TASK_STATE_STOPPED		(2)
 #define TASK_STATE_ZOMBIE		(3)
 
+/*
+ * Forward decl
+ */
 struct __descriptor_table;
+struct __task;
+typedef struct __task task_t;
+
+DEFINE_LINKED_LIST_TYPE(task_t)
 
 /*
  * task state structure
  */
-typedef struct __task
+struct __task
 {
 	task_state_t machine_state;	/* DO NOT MOVE THIS */
 	registers_t *registers;		/* points to the registers pushed to the stack before a syscall */
@@ -59,6 +67,7 @@ typedef struct __task
 	int errno;
 	unsigned int thread_stack;
 	unsigned int thread_stack_start;
+	unsigned int ulimit;
 	unsigned int status;
 	int exit_code;
 	char **argv;
@@ -80,20 +89,16 @@ typedef struct __task
 	struct __descriptor_table *descriptors_info;
 	struct __task *parent;
 	struct __task *main_thread;
-	struct __task *children;
-	struct __task *threads;
-	struct __task *next_child;
-	struct __task *next_thread;
-	struct __task *next;
-} 
-task_t;
+	LINKED_LIST_STRUCT(task_t) children_list;
+	LINKED_LIST_STRUCT(task_t) threads_list;
+};
 
 /*
  * imports
  */
-extern task_t *current_task;			/* widely used */
-extern task_t *tasks;			/* used by procfs */
-extern mutex_t schedule_lock;		/* used by procfs */
+extern task_t *current_task;				/* widely used */
+extern mutex_t schedule_lock;				/* used by procfs */
+DECLARE_LINKED_LIST(task_t, tasks_list);
 
 /*
  * Gets the current task.

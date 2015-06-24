@@ -32,6 +32,8 @@ vfs_node_t *procfs = NULL;
  */
 struct dirent *procfs_readdir(vfs_node_t *node, uint32_t index, struct dirent *buf)
 {
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
+	
 	assert(node != NULL);
 	assert(buf != NULL);
 	assert((node->flags & 0x7) == FS_DIRECTORY);
@@ -40,15 +42,21 @@ struct dirent *procfs_readdir(vfs_node_t *node, uint32_t index, struct dirent *b
 	{
 		assert(0);
 		int i;
-		task_t *tmp;
-		if (tasks == NULL)
+		if (tasks_list.count == 0)
 			return NULL;
+		#if 0
 		tmp = tasks;
 		for (i = 0; i < index && tmp->next != NULL; i++)
 			tmp = tmp->next;
 		if (i < index)
 			return NULL;
 		strcpy(buf->name, itoa(tmp->id));
+		#else
+		iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+		for (i = 0; i < index && i < tasks_list.count; i++)
+			LINKED_LIST_MOVE_NEXT(iter);
+		strcpy(buf->name, itoa(iter.current->val->id));
+		#endif
 		return buf;
 	}
 	else
@@ -106,16 +114,26 @@ uint32_t procfs_readstrings(char **strings, size_t sz, unsigned char *buf)
 uint32_t procfs_read(vfs_node_t *node, uint32_t offset, uint32_t sz, uint8_t *buf)
 {
 	task_t *task;
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
+
 	assert(node != NULL);
 	
 	if (sz == 0)
 		return 0;
 	
+	#if 0
 	mutex_busywait(&schedule_lock);
 	task = tasks;
 	while (task != NULL && task->id != node->inode)
 		task = task->next;
 	mutex_release(&schedule_lock);
+	#else
+	mutex_busywait(&schedule_lock);
+	iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+	LINKED_LIST_SEEK_UNTIL(iter, iter.current->val->id != node->inode);
+	task = iter.current->val;
+	mutex_release(&schedule_lock);
+	#endif
 	
 	if (task == NULL || task->argv == NULL)
 		return 0;
@@ -153,13 +171,22 @@ uint32_t procfs_read(vfs_node_t *node, uint32_t offset, uint32_t sz, uint8_t *bu
  */
 vfs_node_t *procfs_open(vfs_node_t *node, const char *path, uint32_t flags)
 {
-	task_t *tmp;
+	task_t *tmp = NULL;
 	vfs_node_t *open_node;
+	LINKED_LIST_ITER_STRUCT(task_t) iter;
 
 	mutex_busywait(&schedule_lock);
+	
+	#if 0
 	tmp = tasks;
 	while (tmp != NULL && tmp->procfs_node != node)
 		tmp = tmp->next;
+	#else
+	iter = LINKED_LIST_ITER_INIT(task_t, tasks_list);
+	LINKED_LIST_SEEK_UNTIL(tasks_list, iter.current->val->procfs_node == node);
+	if (iter.current != NULL)
+		tmp = iter.current->val;
+	#endif
 	
 	if (tmp == NULL)
 	{

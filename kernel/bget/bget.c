@@ -1208,7 +1208,7 @@ int bpoolv(buf)
 	if (bs < 0) {
 	    bs = -bs;
 	} else {
-            char *lerr = "";
+            /* char *lerr = ""; */
 
 	    assert(bs > 0);
 	    if (bs <= 0) {

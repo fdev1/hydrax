@@ -37,7 +37,6 @@ void kheap_init(void)
 	 * with the KALLOC_OPTN_KERNEL flag
 	 */
 
-	uint32_t page;
 	kheap.buffer = (void*) kalloc(KHEAP_INITIAL_SIZE, 
 		NULL, NULL, KALLOC_OPTN_ALIGN | KALLOC_OPTN_KERNEL);
 	assert(kheap.buffer != NULL);

@@ -502,7 +502,6 @@ int pipe(int pipefd[2])
  */
 int open(const char *pathname, int flags, ...)
 {
-	file_t *f;
 	vfs_node_t *node;
 
 	if (unlikely(strlen(pathname) > MAX_PATH))
@@ -760,7 +759,6 @@ char *getcwd(char *buf, size_t size)
 {
 	vfs_node_t *node;
 	char path[MAX_PATH + 1];
-	size_t len;
 	
 	if (unlikely(buf == NULL))
 	{

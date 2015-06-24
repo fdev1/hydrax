@@ -90,13 +90,13 @@ int atoi(const char *s)
 
 char *itoa(int val)
 {
-	char neg;
+	/* char neg; */
 	char *b = buff;
 	int i, l;
 	unsigned int digit = 1000000000;
 
 	*buff = 0;
-	neg = (val < 0);
+	/* neg = (val < 0); */
 
 	if (val == 0)
 		return buff;

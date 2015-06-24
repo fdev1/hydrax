@@ -16,7 +16,7 @@ typedef struct __device
 device_t;
 
 static vfs_node_t *dev = NULL;
-static device_t *devices = NULL;
+/* static device_t *devices = NULL; */
 
 /*
  * initialize the devfs "file system"

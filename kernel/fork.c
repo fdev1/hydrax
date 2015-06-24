@@ -15,17 +15,18 @@
 
 #include <arch/arch.h>
 #include <mutex.h>
+#include <kheap.h>
 #include <scheduler.h>
 #include <mmu.h>
 #include <memory.h>
 #include <procfs.h>
 #include <io.h>
-#include <kheap.h>
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
 #include <printk.h>
 #include <sys/types.h>
+#include <linkedlist.h>
 #include "config.inc"
 
 static pid_t next_pid = 1;
@@ -44,7 +45,6 @@ int kfork(task_t *new_task, page_directory_t *directory,
 	intptr_t phys, memmap_t *memmap, intptr_t kernel_stack)
 {
 	int i;
-	task_t *tmp_task;
 
 	clear_task_signals(new_task);
 	
@@ -73,17 +73,7 @@ int kfork(task_t *new_task, page_directory_t *directory,
 		 * schedule task
 		 */
 		mutex_wait(&schedule_lock);
-		if (tasks == NULL)
-		{
-			tasks = new_task;
-		}
-		else
-		{
-			tmp_task = (task_t*) tasks;
-			while (tmp_task->next != NULL)
-				tmp_task = tmp_task->next;
-			tmp_task->next = new_task;
-		}
+		LINKED_LIST_APPEND_NEW(task_t, tasks_list, new_task);
 		schedule_prelocked();
 		return new_task->errno;
 	}
@@ -106,7 +96,6 @@ int fork(void)
 {
 	desc_entry_t *descriptors;
 	task_t *new_task;
-	task_t **ptask;
 	page_directory_t *directory;
 	memmap_t *memmap, *parent_memmap;
 	intptr_t phys, kernel_stack;
@@ -231,12 +220,12 @@ int fork(void)
 	new_task->buffers = NULL;
 	new_task->procfs_node = procfs_node;
 	new_task->parent = current_task;
-	new_task->threads = new_task;
 	new_task->errno = new_pid;
-	new_task->children = NULL;
-	new_task->next_child = NULL;
-	new_task->next_thread = NULL;
-	new_task->next = NULL;
+	new_task->children_list = LINKED_LIST_INIT(task_t);
+	new_task->threads_list = LINKED_LIST_INIT(task_t);
+	
+	/* add task to it's list of threads */
+	LINKED_LIST_APPEND_NEW(task_t, new_task->threads_list, new_task);
 	
 	/*
 	 * Copy the current task mmaps.
@@ -304,10 +293,8 @@ int fork(void)
 	 * Add the task to the children list of the parent
 	 */
 	mutex_wait(&current_task->lock);
-	ptask = &current_task->children;
-	while (*ptask != NULL)
-		ptask = &(*ptask)->next_child;
-	*ptask = new_task;
+	if (LINKED_LIST_APPEND_NEW(task_t, current_task->children_list, new_task) == NULL)
+		panic("Out of memory!");
 	mutex_release(&current_task->lock);
 	
 	return kfork(new_task, directory, phys, memmap, kernel_stack);
@@ -327,11 +314,11 @@ int vfork(void)
 int clone(void *stack)
 {
 	int ret;
-	task_t *new_task, *tmp_task;
+	task_t *new_task;
 	intptr_t kernel_stack;
 	vfs_node_t *procfs_node;
 	pid_t new_pid, new_tid;
-	uint32_t *old_stack, *new_stack, tmp;
+	uint32_t tmp;
 	
 	/*
 	 * Get new TID, use parent's PID.
@@ -401,12 +388,15 @@ int clone(void *stack)
 	new_task->buffers = current_task->buffers;
 	new_task->main_thread = current_task->main_thread;
 	new_task->parent = current_task->main_thread;
-	new_task->threads = current_task->threads;
-	new_task->next_thread = NULL;
-	new_task->next = NULL;
+	/* new_task->threads = current_task->threads; */
 	new_task->errno = new_tid;
-	new_task->next_child = NULL;
-	new_task->children = NULL;
+	new_task->children_list = LINKED_LIST_INIT(task_t);
+	new_task->threads_list = LINKED_LIST_INIT(task_t);
+	
+	/* ^^^^^^^^
+	 * NOTE: I'm not sure if the threads_list is used
+	 * at all on child threads
+	 */
 	
 	new_task->descriptors_info = current_task->descriptors_info;
 	
@@ -414,10 +404,9 @@ int clone(void *stack)
 	 * Add the task to the list of threads
 	 */
 	mutex_wait(&current_task->main_thread->lock);
-	tmp_task = current_task->threads;
-	while (tmp_task->next_thread != NULL)
-		tmp_task = tmp_task->next_thread;
-	tmp_task->next_thread = new_task;
+	if (LINKED_LIST_APPEND_NEW(task_t, 
+		current_task->main_thread->threads_list, new_task) == NULL)
+		panic("Out of memory!");
 	mutex_release(&current_task->main_thread->lock);
 
 	/*
@@ -449,7 +438,7 @@ int pthread_create(pthread_t *thread,
 	const pthread_attr_t *attr, pthread_start_fn start_routine, void *arg)
 {
 	pid_t pid;	
-	unsigned int *stack, *pstack;
+	unsigned int *stack;
 	
 	stack = (unsigned int*) kalloc(
 		CONFIG_INITIAL_THREAD_STACK_SIZE * sizeof(unsigned int), 

@@ -21,6 +21,7 @@
 #include <devfs.h>
 #include <string.h>
 #include <errno.h>
+#include <semaphore.h>
 #include "../../config.inc"
 
 #if defined(KERNEL_CODE)
@@ -199,7 +200,8 @@ void kbd_init(void)
 	kbd_input_buffer = (unsigned char*) malloc(CONFIG_KBD_INPUT_BUFFER_SIZE);
 	if (kbd_input_buffer == NULL)
 		panic("tty_init: out of memory!");
-	kbd_semaphore = SEMAPHORE_INITIALIZER(CONFIG_KBD_INPUT_BUFFER_SIZE, CONFIG_KBD_INPUT_BUFFER_SIZE);
+	kbd_semaphore = SEMAPHORE_INITIALIZER(
+		CONFIG_KBD_INPUT_BUFFER_SIZE, CONFIG_KBD_INPUT_BUFFER_SIZE);
 	register_isr(IRQ1, &kbd_input_handler);
 	printk(7, "kbd: keyboard ready");
 }

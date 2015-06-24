@@ -34,7 +34,7 @@ static char* vfs_get_path_level(
 {
 	unsigned int i;
 	size_t sz;
-	const char *start, *end;
+	const char *start;
 	char *s;
 
 	assert(strlen(filename) <= MAX_PATH);

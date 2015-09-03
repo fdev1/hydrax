@@ -190,7 +190,7 @@ dowget ftp://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz
 if [ $NEED_AUTOMAKE_1_11 == 1 ]; then
 	dowget http://ftp.gnu.org/gnu/automake/automake-1.11.1.tar.gz
 	dowget http://ftp.gnu.org/gnu/autoconf/autoconf-2.64.tar.xz
-	dowget http://gnu.mirrors.pair.com/gnu/libtool/libtool-2.4.tar.xz
+	dowget http://gnu.mirror.vexxhost.com/libtool/libtool-2.4.tar.xz
 fi
 
 echo -e "$BULLET Cleaning up working directory..."
